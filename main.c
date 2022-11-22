@@ -16,50 +16,55 @@
 
 #include "cohost.h"
 
+#define PRINTF_INDENT " >  "
+
 int main(int argc, char *argv[])
 {
 	// Variables
 	cohost_session_t *session;
 	CURL *curl;
 
-	// print a cute logo
+	// Print a cute logo
 	printf("  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
 	printf(" / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
 	printf("/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
 	printf("\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n\n");
 
 	// Initialize CURL
-	printf("Initializing CURL\n");
+	printf(PRINTF_INDENT "Initializing CURL\n");
 	curl = Cohost_Initialize();
 
 	// Error check
 	if (curl == NULL)
 	{
-		printf("ERROR: CURL failed to initialize!\n");
+		printf(PRINTF_INDENT "ERROR: CURL failed to initialize!\n");
 		return EXIT_FAILURE;
 	}
-
-	printf("CURL initialized successfully!\n");
+	printf(PRINTF_INDENT "CURL initialized successfully!\n");
 
 	// Login with provided args
-	printf("Logging in to Cohost...\n");
+	printf(PRINTF_INDENT "Logging in to Cohost...\n");
 	session = Cohost_Login(argv[1], argv[2], curl);
 
 	// Error check
 	if (session == NULL)
 	{
-		printf("ERROR: Failed to login to Cohost!\n");
+		printf(PRINTF_INDENT "ERROR: Failed to login to Cohost!\n");
 		return EXIT_FAILURE;
 	}
+	printf(PRINTF_INDENT "Successfully logged into Cohost!\n");
 
-	printf("Successfully logged into Cohost!\n");
+	printf(PRINTF_INDENT "User ID: %d\n", session->user_id);
+	printf(PRINTF_INDENT "User Email: %s\n", session->email);
+	printf(PRINTF_INDENT "Session ID: %s\n", session->session_id);
 
-	printf("\n...\n\n");
+	printf(PRINTF_INDENT "...\n");
 
-	printf("Logging out of Cohost\n");
+	printf(PRINTF_INDENT "Destroying Cohost context...\n");
 	Cohost_Destroy(session);
 	Cohost_Shutdown(curl);
 
+	printf(PRINTF_INDENT "Cya later!\n");
 	return EXIT_SUCCESS;
 }
 

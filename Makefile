@@ -21,11 +21,11 @@ COHOST_DEPS = cohost.h
 COHOST_EXEC = cohost
 COHOST_OBJS = cohost.o main.o
 COHOST_LIBS = -lcurl -l:libcjson.a -l:libnettle.a
-COHOST_FLGS =
+COHOST_FLGS = -g
 
 ## Executable
 $(COHOST_EXEC): $(COHOST_OBJS)
-	$(CC) $(COHOST_OBJS) -o $(COHOST_EXEC) $(COHOST_LIBS)
+	$(CC) $(COHOST_FLGS) $(COHOST_OBJS) -o $(COHOST_EXEC) $(COHOST_LIBS)
 
 ## Rule for C objects
 %.o: %.c $(COHOST_DEPS)

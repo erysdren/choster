@@ -32,14 +32,19 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 {
 	// Variables
 	struct curl_slist *headers = NULL;
+	struct curl_slist *cookies = NULL;
 	cohost_session_t *session;
 	curl_response_t resp_body;
 	curl_response_t resp_head;
 	CURLcode resp_code;
+	cJSON *json;
 	char *url;
 	char *salt;
 	char *clienthash;
 	char *post;
+	char *temp;
+	char *token;
+	int i;
 
 	// Sanity checks
 	if (curl == NULL)
@@ -115,24 +120,75 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 		return NULL;
 	}
 
-	// print raw response data
-	printf("raw POST response:\n");
-	printf("%s\n", resp_body.string);
+	// Get the session ID from the cookie
+	resp_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &cookies);
+
+	// Error check
+	if (resp_code != CURLE_OK)
+	{
+		printf("ERROR: curl_easy_perform() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		return NULL;
+	}
+
+	// Really, really lazy cookie parsing
+	token = strtok(cookies->data, "\t");
+
+	while(token != NULL)
+	{
+		printf("%s\n", token);
+
+		if (!strcmp(token, "connect.sid"))
+		{
+			printf("haha\n");
+			token = strtok(NULL, "\t");
+			break;
+		}
+
+		token = strtok(NULL, "\t");
+	}
+
+	// Get the user ID from the POST response
+	temp = calloc(512, sizeof(char));
+	strncpy(temp, resp_body.string + 33, resp_body.len_string - 33);
+
+	json = cJSON_ParseWithLength(temp, strlen(temp));
+
+	// Error check
+	if (json == NULL)
+	{
+		printf("ERROR: Failed to find userId in given POST response in Cohost_Login()!\n");
+		return NULL;
+	}
+
+	json = cJSON_GetObjectItemCaseSensitive(json, "userId");
+
+	// Error check
+	if (json == NULL)
+	{
+		printf("ERROR: Failed to find userId in recieved POST response in Cohost_Login()!\n");
+		return NULL;
+	}
 
 	// Set the values on the session we allocated
-	session->user_id = 6969;
+	session->user_id = json->valueint;
 	session->email = calloc(strlen(email) + 1, sizeof(char));
 	memcpy(session->email, email, strlen(email));
 	session->email[strlen(email) + 1] = '\0';
+	session->session_id = calloc(strlen(token) + 1, sizeof(char));
+	memcpy(session->session_id, token, strlen(token));
+	session->session_id[strlen(token) + 1] = '\0';
 
 	// Free the memory we used
 	curl_slist_free_all(headers);
+	curl_slist_free_all(cookies);
+	cJSON_Delete(json);
 	free(resp_body.string);
 	free(resp_head.string);
 	free(url);
 	free(salt);
 	free(clienthash);
 	free(post);
+	free(temp);
 
 	// Return a pointer to the session
 	return session;
@@ -141,10 +197,11 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 // Close the connection and destroy the provided session context.
 void Cohost_Destroy(cohost_session_t *session)
 {
-	free(session->session_id);
-	free(session->salt);
-	free(session->email);
-	free(session);
+	if (session == NULL) return;
+	if (session->session_id) free(session->session_id);
+	if (session->salt) free(session->salt);
+	if (session->email) free(session->email);
+	if (session) free(session);
 }
 
 // Shutdown CURL
@@ -185,9 +242,17 @@ char *Cryptography_DecodeSalt(curl_response_t *response)
 
 	// Parse json
 	json = cJSON_ParseWithLength(response->string, response->len_string);
+
+	// Error check
+	if (json == NULL)
+	{
+		printf("Failed to find parse CURL response string into JSON in Cohost_DecodeSalt()!\n");
+		return NULL;
+	}
+
 	json = cJSON_GetObjectItemCaseSensitive(json, "salt");
 
-	// Sanity check
+	// Error check
 	if (json == NULL)
 	{
 		printf("Failed to find salt in given CURL response in Cohost_DecodeSalt()!\n");
@@ -204,7 +269,7 @@ char *Cryptography_DecodeSalt(curl_response_t *response)
 	salt_decoded_len = Base64_DecodedSize(salt) + 1;
 	salt_decoded = calloc(salt_decoded_len, sizeof(char));
 
-	// Sanity check
+	// Error check
 	if (!Base64_Decode(salt, (unsigned char *)salt_decoded, salt_decoded_len))
 	{
 		printf("Failed to decode Base64 in Cohost_DecodeSalt()!\n");
