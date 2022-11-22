@@ -10,7 +10,7 @@
 //
 // DESCRIPTION:		Cohost API header
 //
-// LAST EDITED:		November 20th, 2022
+// LAST EDITED:		November 22nd, 2022
 //
 // ========================================================
 
@@ -37,6 +37,62 @@
 #include <cjson/cJSON.h>
 #include <nettle/pbkdf2.h>
 
+// Cohost Session struct
+typedef struct
+{
+	int user_id;
+	char *email;
+	char *session_id;
+	char *salt;
+} cohost_session_t;
+
+// CURL Response struct
+typedef struct
+{
+	char *string;
+	size_t len_string;
+} curl_response_t;
+
+//
+// Cohost API functions (cohost.c)
+//
+
+//
+// Public functions
+//
+
+CURL *Cohost_Initialize(void);
+cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl);
+void Cohost_Destroy(cohost_session_t *session);
+void Cohost_Shutdown(CURL *curl);
+
+//
+// Private functions
+//
+
+// Cryptography functions
+char *Cryptography_GenerateClientHash(char *password, char *salt);
+char *Cryptography_DecodeSalt(curl_response_t *response);
+
+// Base64 functions
+size_t Base64_EncodedSize(size_t inlen);
+size_t Base64_DecodedSize(const char *in);
+void Base64_GenerateDecodeTable(void);
+int Base64_IsValidChar(char c);
+char *Base64_Encode(const unsigned char *in, size_t len);
+int Base64_Decode(const char *in, unsigned char *out, size_t outlen);
+
+// Utility functions
+char *Utility_ReplaceCharInString(char *string, char find, char replace);
+
+// CURL Response handling
+void CURL_ResponseAllocate(curl_response_t *response);
+size_t CURL_ResponseCatch(void *pointer, size_t size, size_t nmemb, curl_response_t *response);
+
+//
+// don't look at this
+//
+
 // Response data struct
 typedef struct
 {
@@ -51,9 +107,6 @@ void b64_generate_decode_table();
 int b64_isvalidchar(char c);
 char *b64_encode(const unsigned char *in, size_t len);
 int b64_decode(const char *in, unsigned char *out, size_t outlen);
-
-// Cohost API functions (cohost.c)
-void Cohost_Login(char *email, char *password);
 
 // Hash handling (hash.c)
 char *hash_generate(char *password, char *salt);

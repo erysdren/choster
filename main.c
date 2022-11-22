@@ -10,11 +10,60 @@
 //
 // DESCRIPTION:		Cohost terminal app
 //
-// LAST EDITED:		November 20th, 2022
+// LAST EDITED:		November 22nd, 2022
 //
 // ========================================================
 
 #include "cohost.h"
+
+int main(int argc, char *argv[])
+{
+	// Variables
+	cohost_session_t *session;
+	CURL *curl;
+
+	// print a cute logo
+	printf("  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
+	printf(" / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
+	printf("/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
+	printf("\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n\n");
+
+	// Initialize CURL
+	printf("Initializing CURL\n");
+	curl = Cohost_Initialize();
+
+	// Error check
+	if (curl == NULL)
+	{
+		printf("ERROR: CURL failed to initialize!\n");
+		return EXIT_FAILURE;
+	}
+
+	printf("CURL initialized successfully!\n");
+
+	// Login with provided args
+	printf("Logging in to Cohost...\n");
+	session = Cohost_Login(argv[1], argv[2], curl);
+
+	// Error check
+	if (session == NULL)
+	{
+		printf("ERROR: Failed to login to Cohost!\n");
+		return EXIT_FAILURE;
+	}
+
+	printf("Successfully logged into Cohost!\n");
+
+	printf("\n...\n\n");
+
+	printf("Logging out of Cohost\n");
+	Cohost_Destroy(session);
+	Cohost_Shutdown(curl);
+
+	return EXIT_SUCCESS;
+}
+
+#if 0
 
 int main(int argc, char *argv[])
 {
@@ -107,11 +156,11 @@ int main(int argc, char *argv[])
 
 		printf("\n...\n\n");
 
-		#if 0
-
 		// print raw response data
 		printf("raw POST response:\n");
 		printf("%s\n", response.string);
+
+		#if 0
 
 		// setup cookies
 		printf("printing cookie info:\n");
@@ -166,3 +215,5 @@ int main(int argc, char *argv[])
 	printf("> cya later!\n\n");
 	return EXIT_SUCCESS;
 }
+
+#endif
