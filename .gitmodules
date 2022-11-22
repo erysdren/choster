@@ -1,0 +1,6 @@
+[submodule "thirdparty/curl"]
+	path = thirdparty/curl
+	url = https://github.com/curl/curl
+[submodule "thirdparty/watt"]
+	path = thirdparty/watt
+	url = https://github.com/gvanem/Watt-32/
