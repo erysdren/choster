@@ -10,7 +10,7 @@
 ##
 ## DESCRIPTION:		libcohost make file
 ##
-## LAST EDITED:		November 20th, 2022
+## LAST EDITED:		November 22nd, 2022
 ##
 ## ========================================================
 
@@ -19,7 +19,7 @@ CC = gcc
 
 COHOST_DEPS = cohost.h
 COHOST_EXEC = cohost
-COHOST_OBJS = base64.o cohost.o hash.o main.o network.o response.o salt.o utils.o
+COHOST_OBJS = cohost.o main.o
 COHOST_LIBS = -lcurl -l:libcjson.a -l:libnettle.a
 COHOST_FLGS =
 

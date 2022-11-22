@@ -37,6 +37,16 @@
 #include <cjson/cJSON.h>
 #include <nettle/pbkdf2.h>
 
+//
+//
+// Cohost API
+//
+//
+
+//
+// Datatypes
+//
+
 // Cohost Session struct
 typedef struct
 {
@@ -52,10 +62,6 @@ typedef struct
 	char *string;
 	size_t len_string;
 } curl_response_t;
-
-//
-// Cohost API functions (cohost.c)
-//
 
 //
 // Public functions
@@ -88,41 +94,5 @@ char *Utility_ReplaceCharInString(char *string, char find, char replace);
 // CURL Response handling
 void CURL_ResponseAllocate(curl_response_t *response);
 size_t CURL_ResponseCatch(void *pointer, size_t size, size_t nmemb, curl_response_t *response);
-
-//
-// don't look at this
-//
-
-// Response data struct
-typedef struct
-{
-	char *string;
-	size_t len_string;
-} response_t;
-
-// Base64 handling (base64.c)
-size_t b64_encoded_size(size_t inlen);
-size_t b64_decoded_size(const char *in);
-void b64_generate_decode_table();
-int b64_isvalidchar(char c);
-char *b64_encode(const unsigned char *in, size_t len);
-int b64_decode(const char *in, unsigned char *out, size_t outlen);
-
-// Hash handling (hash.c)
-char *hash_generate(char *password, char *salt);
-
-// Network handling (network.c)
-CURLcode login_post_request(CURL *curl, char *email, char *clienthash);
-
-// Response handling (response.c)
-void response_allocate(response_t *str);
-size_t response_catch(void *pointer, size_t size, size_t nmemb, response_t *response);
-
-// Salt handling (salt.c)
-char *salt_process(response_t *response);
-char *salt_decode(char *salt);
-
-// String utilities (strutils.c)
-char *replace_char(char *string, char find, char replace);
 
 #endif // __COHOST_H__
