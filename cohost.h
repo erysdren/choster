@@ -44,6 +44,18 @@
 //
 
 //
+// User flags
+//
+
+enum cohost_userflags
+{
+	USERFLAG_LOGGEDIN = 1 << 0,
+	USERFLAG_ACTIVATED = 1 << 1,
+	USERFLAG_READONLY = 1 << 2,
+	USERFLAG_MODMODE = 1 << 3
+};
+
+//
 // Datatypes
 //
 
@@ -51,9 +63,11 @@
 typedef struct
 {
 	int user_id;
+	int project_id;
+	int flags;
 	char *email;
 	char *session_id;
-	char *salt;
+	char *project_handle;
 } cohost_session_t;
 
 // CURL Response struct

@@ -38,11 +38,11 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	curl_response_t resp_head;
 	CURLcode resp_code;
 	cJSON *json;
+	cJSON *json_item;
 	char *url;
 	char *salt;
 	char *clienthash;
 	char *post;
-	char *temp;
 	char *token;
 	int i;
 
@@ -67,14 +67,14 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 
 	// Allocate data
 	session = calloc(1, sizeof(cohost_session_t));
-	CURL_ResponseAllocate(&resp_body);
-	CURL_ResponseAllocate(&resp_head);
 	url = calloc(512, sizeof(char));
 
 	// Setup URL for GET request
 	snprintf(url, 512, "https://cohost.org/api/v1/login/salt?email=%s", email);
 
 	// Set CURLOPTs and send GET request
+	CURL_ResponseAllocate(&resp_body);
+	CURL_ResponseAllocate(&resp_head);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
@@ -108,6 +108,8 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	headers = curl_slist_append(headers, "charset: utf-8");
 
 	// Set CURLOPTs and send POST request
+	CURL_ResponseAllocate(&resp_body);
+	CURL_ResponseAllocate(&resp_head);
 	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/login");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post);
@@ -144,36 +146,54 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 		token = strtok(NULL, "\t");
 	}
 
+	// Set CURLOPTs and send GET request for user info
+	CURL_ResponseAllocate(&resp_body);
+	CURL_ResponseAllocate(&resp_head);
+	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
+	resp_code = curl_easy_perform(curl);
+
+	// Error check
+	if (resp_code != CURLE_OK)
+	{
+		printf("ERROR: curl_easy_perform() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		return NULL;
+	}
+
 	// Get the user ID from the POST response
-	temp = calloc(512, sizeof(char));
-	strncpy(temp, resp_body.string + 33, resp_body.len_string - 33);
-
-	json = cJSON_ParseWithLength(temp, strlen(temp));
+	json = cJSON_ParseWithLength(resp_body.string, resp_body.len_string);
 
 	// Error check
 	if (json == NULL)
 	{
-		printf("ERROR: Failed to find userId in given POST response in Cohost_Login()!\n");
+		printf("ERROR: Failed to find valid JSON in given POST response in Cohost_Login()!\n");
 		return NULL;
 	}
 
-	json = cJSON_GetObjectItemCaseSensitive(json, "userId");
-
-	// Error check
-	if (json == NULL)
-	{
-		printf("ERROR: Failed to find userId in recieved POST response in Cohost_Login()!\n");
-		return NULL;
-	}
+	json = cJSON_GetObjectItemCaseSensitive(json, "result");
+	json = cJSON_GetObjectItemCaseSensitive(json, "data");
+	json_item = cJSON_GetObjectItemCaseSensitive(json, "projectHandle");
 
 	// Set the values on the session we allocated
-	session->user_id = json->valueint;
+	session->user_id = cJSON_GetObjectItemCaseSensitive(json, "userId")->valueint;
+	session->project_id = cJSON_GetObjectItemCaseSensitive(json, "projectId")->valueint;
+
+	if (cJSON_GetObjectItemCaseSensitive(json, "loggedIn")->valueint > 0) session->flags |= USERFLAG_LOGGEDIN;
+	if (cJSON_GetObjectItemCaseSensitive(json, "activated")->valueint > 0) session->flags |= USERFLAG_ACTIVATED;
+	if (cJSON_GetObjectItemCaseSensitive(json, "readOnly")->valueint > 0) session->flags |= USERFLAG_READONLY;
+	if (cJSON_GetObjectItemCaseSensitive(json, "modMode")->valueint > 0) session->flags |= USERFLAG_MODMODE;
+
 	session->email = calloc(strlen(email) + 1, sizeof(char));
 	memcpy(session->email, email, strlen(email));
 	session->email[strlen(email) + 1] = '\0';
+
 	session->session_id = calloc(strlen(token) + 1, sizeof(char));
 	memcpy(session->session_id, token, strlen(token));
 	session->session_id[strlen(token) + 1] = '\0';
+
+	session->project_handle = calloc(strlen(json_item->valuestring) + 1, sizeof(char));
+	memcpy(session->project_handle, json_item->valuestring, strlen(json_item->valuestring));
+	session->project_handle[strlen(json_item->valuestring)] = '\0';
 
 	// Free the memory we used
 	curl_slist_free_all(headers);
@@ -185,7 +205,6 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	free(salt);
 	free(clienthash);
 	free(post);
-	free(temp);
 
 	// Return a pointer to the session
 	return session;
@@ -196,7 +215,7 @@ void Cohost_Destroy(cohost_session_t *session)
 {
 	if (session == NULL) return;
 	if (session->session_id) free(session->session_id);
-	if (session->salt) free(session->salt);
+	if (session->project_handle) free(session->project_handle);
 	if (session->email) free(session->email);
 	if (session) free(session);
 }

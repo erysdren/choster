@@ -25,10 +25,11 @@ int main(int argc, char *argv[])
 	CURL *curl;
 
 	// Print a cute logo
-	printf("  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
-	printf(" / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
-	printf("/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
-	printf("\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n\n");
+	printf(PRINTF_INDENT "  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
+	printf(PRINTF_INDENT " / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
+	printf(PRINTF_INDENT "/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
+	printf(PRINTF_INDENT "\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n");
+	printf(PRINTF_INDENT "\n");
 
 	// Initialize CURL
 	printf(PRINTF_INDENT "Initializing CURL\n");
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
 		printf(PRINTF_INDENT "ERROR: CURL failed to initialize!\n");
 		return EXIT_FAILURE;
 	}
+
 	printf(PRINTF_INDENT "CURL initialized successfully!\n");
 
 	// Login with provided args
@@ -52,14 +54,18 @@ int main(int argc, char *argv[])
 		printf(PRINTF_INDENT "ERROR: Failed to login to Cohost!\n");
 		return EXIT_FAILURE;
 	}
+
 	printf(PRINTF_INDENT "Successfully logged into Cohost!\n");
-
+	printf(PRINTF_INDENT "\n");
+	printf(PRINTF_INDENT "User info:\n");
+	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "User ID: %d\n", session->user_id);
+	printf(PRINTF_INDENT "Project ID: %d\n", session->project_id);
+	printf(PRINTF_INDENT "Project Handle: %s\n", session->project_handle);
 	printf(PRINTF_INDENT "User Email: %s\n", session->email);
-	printf(PRINTF_INDENT "Session ID: %s\n", session->session_id);
-
+	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "...\n");
-
+	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "Destroying Cohost context\n");
 	Cohost_Destroy(session);
 	Cohost_Shutdown(curl);
