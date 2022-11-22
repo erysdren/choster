@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 	printf(PRINTF_INDENT "...\n");
 
-	printf(PRINTF_INDENT "Destroying Cohost context...\n");
+	printf(PRINTF_INDENT "Destroying Cohost context\n");
 	Cohost_Destroy(session);
 	Cohost_Shutdown(curl);
 

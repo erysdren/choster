@@ -135,11 +135,8 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 
 	while(token != NULL)
 	{
-		printf("%s\n", token);
-
 		if (!strcmp(token, "connect.sid"))
 		{
-			printf("haha\n");
 			token = strtok(NULL, "\t");
 			break;
 		}
