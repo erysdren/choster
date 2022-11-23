@@ -26,9 +26,9 @@ An MS-DOS version, built via DJGPP, is being worked on.
 
 ## Building
 
-For a Linux target, enter the source folder in the terminal and type "make".
+For a Linux target, enter the source folder in the terminal and type `make`.
 
-To run an experimental DOS DJGPP build, run "make DJGPP=TRUE"
+To run an experimental DOS DJGPP build, run `make DJGPP=TRUE`
 
 Windows builds are currently untested.
 
