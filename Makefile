@@ -10,7 +10,7 @@
 ##
 ## DESCRIPTION:		libcohost makefile
 ##
-## LAST EDITED:		November 22nd, 2022
+## LAST EDITED:		November 23rd, 2022
 ##
 ## ========================================================
 
@@ -18,7 +18,7 @@ ifdef DJGPP
 
 CC = i586-pc-msdosdjgpp-gcc
 
-COHOST_EXEC = ./build/cohost.exe
+COHOST_EXEC = ./build/dos/cohost.exe
 
 COHOST_LIBS = -l:libcurl.a -l:libwatt.a -l:libcjson.a
 COHOST_FLGS = -g -L./libs -I./thirdparty/curl/include -I./thirdparty/watt/inc -I./thirdparty

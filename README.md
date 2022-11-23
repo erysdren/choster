@@ -2,9 +2,35 @@
 
 A C library for interfacing with cohost.org
 
-Currently it only allows you to login with a valid email and password.
+Currently it allows you to login with a valid email and password. You can also login on subsequent attempts using a cookie saved from the previous session.
+
+Valid commandline arguments:
+
+```
+Set email:
+-e <email>
+
+Set password:
+-p <pass>
+
+Credentials file to load from:
+-c <file>
+
+Credentials file to save to:
+-s <file>
+```
 
 Requires curl, cJSON and nettle.
+
+An MS-DOS version, built via DJGPP, is being worked on.
+
+## Building
+
+For a Linux target, enter the source folder in the terminal and type "make".
+
+To run an experimental DOS DJGPP build, run "make DJGPP=TRUE"
+
+Windows builds are currently untested.
 
 ## License
 

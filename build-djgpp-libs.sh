@@ -11,7 +11,7 @@
 ## DESCRIPTION:		Bash script for building the thirdparty
 ##					libraries with DJGPP
 ##
-## LAST EDITED:		November 22nd, 2022
+## LAST EDITED:		November 23rd, 2022
 ##
 ## ========================================================
 
@@ -33,3 +33,6 @@ cp libcurl.a ../../../libs/libcurl.a
 
 ## build cjson
 cd ../../cjson
+i586-pc-msdosdjgpp-gcc -c cJSON.c
+i586-pc-msdosdjgpp-ar rcs libcjson.a cJSON.o
+cp libcjson.a ../../libs/libcjson.a

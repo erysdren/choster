@@ -10,12 +10,15 @@
 //
 // DESCRIPTION:		Cohost terminal app
 //
-// LAST EDITED:		November 22nd, 2022
+// LAST EDITED:		November 23rd, 2022
 //
 // ========================================================
 
 #include "cohost.h"
+
+#ifndef __DJGPP__
 #include <getopt.h>
+#endif
 
 #define PRINTF_INDENT " >  "
 
@@ -66,6 +69,8 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
+	#ifndef __DJGPP__
+
 	// Process args
 	while ((c = getopt(argc, argv, "e:p:c:s:")) != -1)
 	{
@@ -99,6 +104,16 @@ int main(int argc, char *argv[])
 				break;
 		}
 	}
+
+	#else
+
+	email = calloc(strlen(argv[1]) + 1, sizeof(char));
+	password = calloc(strlen(argv[2]) + 1, sizeof(char));
+
+	strcpy(email, argv[1]);
+	strcpy(password, argv[2]);
+
+	#endif
 
 	// Make sure everything's correct
 	if ((email == NULL && password != NULL) || (email != NULL && password == NULL))
@@ -177,6 +192,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			printf(PRINTF_INDENT "\n");
 			printf(PRINTF_INDENT "Unknown command: %s", command);
 			printf(PRINTF_INDENT "Type \"help\" to see valid commands\n");
 			printf(PRINTF_INDENT "\n");

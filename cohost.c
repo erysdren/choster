@@ -10,7 +10,7 @@
 //
 // DESCRIPTION:		Cohost API functions
 //
-// LAST EDITED:		November 22nd, 2022
+// LAST EDITED:		November 23rd, 2022
 //
 // ========================================================
 
@@ -77,7 +77,9 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	#ifndef __DJGPP__
 	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
+	#endif
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
@@ -253,7 +255,9 @@ cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cooki
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookie_load_filename);
+	#ifndef __DJGPP__
 	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
+	#endif
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
@@ -310,8 +314,12 @@ char *Cryptography_GenerateClientHash(char *password, char *salt)
 	// allocate hash buffer
 	clienthash = calloc(128, sizeof(char));
 
+	#ifndef __DJGPP__
+
 	// use nettle to generate it
 	nettle_pbkdf2_hmac_sha384(strlen(password), password, 200000, strlen(salt), salt, 128, clienthash);
+
+	#endif
 
 	// Encode clienthash
 	return Base64_Encode((unsigned char *)clienthash, strlen(clienthash));
