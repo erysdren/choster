@@ -28,11 +28,10 @@ CURL *Cohost_Initialize(void)
 }
 
 // Attempt to login to cohost.org and return a session context
-cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
+cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_filename, CURL *curl)
 {
 	// Variables
 	struct curl_slist *headers = NULL;
-	struct curl_slist *cookies = NULL;
 	cohost_session_t *session;
 	curl_response_t resp_body;
 	curl_response_t resp_head;
@@ -78,6 +77,7 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
@@ -123,7 +123,7 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	}
 
 	// Get the session ID from the cookie
-	resp_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &cookies);
+	resp_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &session->cookies);
 
 	// Error check
 	if (resp_code != CURLE_OK)
@@ -133,7 +133,7 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	}
 
 	// Really, really lazy cookie parsing
-	token = strtok(cookies->data, "\t");
+	token = strtok(session->cookies->data, "\t");
 
 	while(token != NULL)
 	{
@@ -170,6 +170,7 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 		return NULL;
 	}
 
+	// Populate user info
 	json = cJSON_GetObjectItemCaseSensitive(json, "result");
 	json = cJSON_GetObjectItemCaseSensitive(json, "data");
 	json_item = cJSON_GetObjectItemCaseSensitive(json, "projectHandle");
@@ -197,7 +198,6 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 
 	// Free the memory we used
 	curl_slist_free_all(headers);
-	curl_slist_free_all(cookies);
 	cJSON_Delete(json);
 	free(resp_body.string);
 	free(resp_head.string);
@@ -210,6 +210,75 @@ cohost_session_t *Cohost_Login(char *email, char *password, CURL *curl)
 	return session;
 }
 
+// Attempt to login to cohost.org with a cookie and return a session context
+cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cookie_save_filename, CURL *curl)
+{
+	// Variables
+	cohost_session_t *session;
+	curl_response_t resp_body;
+	curl_response_t resp_head;
+	CURLcode resp_code;
+	FILE *cookie_file;
+	int i;
+
+	// Sanity checks
+	if (curl == NULL)
+	{
+		printf("ERROR: Provided CURL context was not properly initialized!\n");
+		return NULL;
+	}
+
+	if (cookie_load_filename == NULL)
+	{
+		printf("ERROR: Provided credentials filename string is NULL!\n");
+		return NULL;
+	}
+
+	if ((cookie_file = fopen(cookie_load_filename, "r")) == NULL)
+	{
+		printf("ERROR: Failed to find credentials file!\n");
+		return NULL;
+	}
+	else
+	{
+		fclose(cookie_file);
+	}
+
+	// Allocate data
+	session = calloc(1, sizeof(cohost_session_t));
+
+	// Set CURLOPTs and send GET request for user info
+	CURL_ResponseAllocate(&resp_body);
+	CURL_ResponseAllocate(&resp_head);
+	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookie_load_filename);
+	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &resp_head);
+	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
+	resp_code = curl_easy_perform(curl);
+
+	// Error check
+	if (resp_code != CURLE_OK)
+	{
+		printf("ERROR: curl_easy_perform() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		return NULL;
+	}
+
+	// Debug print
+	printf("%s\n", resp_body.string);
+	printf("%s\n", resp_head.string);
+
+	// Free the memory we used
+	free(resp_body.string);
+	free(resp_head.string);
+
+	return session;
+}
+
 // Close the connection and destroy the provided session context.
 void Cohost_Destroy(cohost_session_t *session)
 {
@@ -217,6 +286,7 @@ void Cohost_Destroy(cohost_session_t *session)
 	if (session->session_id) free(session->session_id);
 	if (session->project_handle) free(session->project_handle);
 	if (session->email) free(session->email);
+	if (session->cookies) curl_slist_free_all(session->cookies);
 	if (session) free(session);
 }
 

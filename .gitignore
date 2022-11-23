@@ -14,3 +14,6 @@
 # build artifacts
 build/
 *.o
+
+# dev
+run.sh

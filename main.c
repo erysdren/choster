@@ -15,21 +15,100 @@
 // ========================================================
 
 #include "cohost.h"
+#include <getopt.h>
 
 #define PRINTF_INDENT " >  "
+
+enum cohost_app_modes
+{
+	LOGIN_WITH_EMAIL_AND_PASSWORD,
+	LOGIN_WITH_CREDENTIALS_FILE,
+};
+
+void print_logo(void)
+{
+	printf(PRINTF_INDENT "  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
+	printf(PRINTF_INDENT " / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
+	printf(PRINTF_INDENT "/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
+	printf(PRINTF_INDENT "\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n");
+	printf(PRINTF_INDENT "\n");
+}
+
+void print_helptext(void)
+{
+	printf("\n");
+	printf(PRINTF_INDENT "Cohost terminal interface v0.1\n");
+	printf(PRINTF_INDENT "Usage:\n");
+	printf(PRINTF_INDENT "-e <email>	Email\n");
+	printf(PRINTF_INDENT "-p <pass>	Password\n");
+	printf(PRINTF_INDENT "-c <file>	Load credentials from file\n");
+	printf(PRINTF_INDENT "-s <file>	Save credentials to file\n");
+	printf("\n");
+}
 
 int main(int argc, char *argv[])
 {
 	// Variables
 	cohost_session_t *session;
 	CURL *curl;
+	char *email;
+	char *password;
+	char *credentials_load;
+	char *credentials_save;
+	int c;
+	int mode;
+
+	// If user provided no args, print help text
+	if (argc < 2)
+	{
+		print_helptext();
+		return EXIT_SUCCESS;
+	}
+
+	// Process args
+	while ((c = getopt(argc, argv, "e:p:c:s:")) != -1)
+	{
+		switch (c)
+		{
+			case 'e':
+				email = optarg;
+				mode = LOGIN_WITH_EMAIL_AND_PASSWORD;
+				break;
+
+			case 'p':
+				password = optarg;
+				mode = LOGIN_WITH_EMAIL_AND_PASSWORD;
+				break;
+
+			case 'c':
+				credentials_load = optarg;
+				mode = LOGIN_WITH_CREDENTIALS_FILE;
+				break;
+
+			case 's':
+				credentials_save = optarg;
+				break;
+
+			case '?':
+				print_helptext();
+				return EXIT_SUCCESS;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	// Make sure everything's correct
+	if ((email == NULL && password != NULL) || (email != NULL && password == NULL))
+	{
+		printf(PRINTF_INDENT "ERROR: You must supply both an email and a password to login!\n");
+		print_helptext();
+		return EXIT_FAILURE;
+	}
 
 	// Print a cute logo
-	printf(PRINTF_INDENT "  _____  ____    __ __  ____    ____ ______     ____    ___   _____\n");
-	printf(PRINTF_INDENT " / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/\n");
-	printf(PRINTF_INDENT "/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / \n");
-	printf(PRINTF_INDENT "\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  \n");
-	printf(PRINTF_INDENT "\n");
+	print_logo();
 
 	// Initialize CURL
 	printf(PRINTF_INDENT "Initializing CURL\n");
@@ -45,8 +124,21 @@ int main(int argc, char *argv[])
 	printf(PRINTF_INDENT "CURL initialized successfully!\n");
 
 	// Login with provided args
+	// Never hurts to be paranoid.
 	printf(PRINTF_INDENT "Logging in to Cohost...\n");
-	session = Cohost_Login(argv[1], argv[2], curl);
+	if (mode == LOGIN_WITH_EMAIL_AND_PASSWORD && email != NULL && password != NULL)
+	{
+		session = Cohost_Login(email, password, credentials_save, curl);
+	}
+	else if (mode == LOGIN_WITH_CREDENTIALS_FILE && credentials_load != NULL)
+	{
+		session = Cohost_LoginWithCookie(credentials_load, credentials_save, curl);
+	}
+	else
+	{
+		printf(PRINTF_INDENT "Invalid login mode! Cannot proceed!\n");
+		return EXIT_FAILURE;
+	}
 
 	// Error check
 	if (session == NULL)
@@ -55,6 +147,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	// Print a bunch of stuff to see if it worked
 	printf(PRINTF_INDENT "Successfully logged into Cohost!\n");
 	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "User info:\n");
@@ -67,9 +160,12 @@ int main(int argc, char *argv[])
 	printf(PRINTF_INDENT "...\n");
 	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "Destroying Cohost context\n");
+
+	// Shutdown
 	Cohost_Destroy(session);
 	Cohost_Shutdown(curl);
 
+	// Exit
 	printf(PRINTF_INDENT "Cya later!\n");
 	return EXIT_SUCCESS;
 }
