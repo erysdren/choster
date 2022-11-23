@@ -4,3 +4,9 @@
 [submodule "thirdparty/watt"]
 	path = thirdparty/watt
 	url = https://github.com/gvanem/Watt-32/
+[submodule "thirdparty/cjson"]
+	path = thirdparty/cjson
+	url = https://github.com/DaveGamble/cJSON
+[submodule "thirdparty/nettle"]
+	path = thirdparty/nettle
+	url = https://github.com/gnutls/nettle

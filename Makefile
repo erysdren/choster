@@ -8,20 +8,35 @@
 ##
 ## LICENSE:			ACSL v1.4
 ##
-## DESCRIPTION:		libcohost make file
+## DESCRIPTION:		libcohost makefile
 ##
 ## LAST EDITED:		November 22nd, 2022
 ##
 ## ========================================================
 
-## Variables
+ifdef DJGPP
+
+CC = i586-pc-msdosdjgpp-gcc
+
+COHOST_EXEC = ./build/cohost.exe
+
+COHOST_LIBS = -l:libcurl.a -l:libwatt.a -l:libcjson.a
+COHOST_FLGS = -g -L./libs -I./thirdparty/curl/include -I./thirdparty/watt/inc -I./thirdparty
+
+else
+
 CC = gcc
 
-COHOST_DEPS = cohost.h
-COHOST_EXEC = cohost
-COHOST_OBJS = cohost.o main.o
+COHOST_EXEC = ./build/cohost
+
 COHOST_LIBS = -lcurl -l:libcjson.a -l:libnettle.a
 COHOST_FLGS = -g
+
+endif
+
+## Variables
+COHOST_DEPS = cohost.h
+COHOST_OBJS = cohost.o main.o
 
 ## Executable
 $(COHOST_EXEC): $(COHOST_OBJS)

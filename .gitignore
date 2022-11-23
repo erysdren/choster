@@ -1,10 +1,16 @@
-*
-!*.c
-!*.h
-!.gitattributes
-!.gitignore
-!README.md
-!LICENSE
-!Makefile
-!thirdparty/
-!thirdparty/*
+# local files
+/local/
+
+# compiled thirdparty libs (DJGPP)
+/libs/
+
+# vscode
+/**/.vscode
+*.code-workspace
+
+# cmake
+/**/cmake-build-*/
+
+# build artifacts
+build/
+*.o
