@@ -34,16 +34,16 @@ void print_logo(void)
 	printf(PRINTF_INDENT "\n");
 }
 
-void print_helptext(void)
+void print_starthelp(void)
 {
-	printf("\n");
+	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "Cohost terminal interface v0.1\n");
 	printf(PRINTF_INDENT "Usage:\n");
 	printf(PRINTF_INDENT "-e <email>	Email\n");
 	printf(PRINTF_INDENT "-p <pass>	Password\n");
 	printf(PRINTF_INDENT "-c <file>	Load credentials from file\n");
 	printf(PRINTF_INDENT "-s <file>	Save credentials to file\n");
-	printf("\n");
+	printf(PRINTF_INDENT "\n");
 }
 
 int main(int argc, char *argv[])
@@ -55,13 +55,14 @@ int main(int argc, char *argv[])
 	char *password;
 	char *credentials_load;
 	char *credentials_save;
+	char command[64];
 	int c;
 	int mode;
 
 	// If user provided no args, print help text
 	if (argc < 2)
 	{
-		print_helptext();
+		print_starthelp();
 		return EXIT_SUCCESS;
 	}
 
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case '?':
-				print_helptext();
+				print_starthelp();
 				return EXIT_SUCCESS;
 				break;
 
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
 	if ((email == NULL && password != NULL) || (email != NULL && password == NULL))
 	{
 		printf(PRINTF_INDENT "ERROR: You must supply both an email and a password to login!\n");
-		print_helptext();
+		print_starthelp();
 		return EXIT_FAILURE;
 	}
 
@@ -150,23 +151,52 @@ int main(int argc, char *argv[])
 	// Print a bunch of stuff to see if it worked
 	printf(PRINTF_INDENT "Successfully logged into Cohost!\n");
 	printf(PRINTF_INDENT "\n");
-	printf(PRINTF_INDENT "User info:\n");
+
+	printf(PRINTF_INDENT "Entering Cohost command terminal\n");
+	printf(PRINTF_INDENT "Enter the heilp command to get started!\n");
 	printf(PRINTF_INDENT "\n");
-	printf(PRINTF_INDENT "User ID: %d\n", session->user_id);
-	printf(PRINTF_INDENT "Project ID: %d\n", session->project_id);
-	printf(PRINTF_INDENT "Project Handle: %s\n", session->project_handle);
-	printf(PRINTF_INDENT "User Email: %s\n", session->email);
+
+	// Text command parser
+	while (printf(PRINTF_INDENT) && fgets(command, sizeof(command), stdin) && strncmp(command, "exit", 4) != 0)
+	{
+		if (!strncmp(command, "help", 4))
+		{
+			printf(PRINTF_INDENT "\n");
+			printf(PRINTF_INDENT "help		- Display this message\n");
+			printf(PRINTF_INDENT "exit		- Exit the program\n");
+			printf(PRINTF_INDENT "userinfo		- Display current user information\n");
+			printf(PRINTF_INDENT "\n");
+		}
+		else if (!strncmp(command, "userinfo", 8))
+		{
+			printf(PRINTF_INDENT "\n");
+			printf(PRINTF_INDENT "User ID: %d\n", session->user_id);
+			printf(PRINTF_INDENT "Page ID: %d\n", session->project_id);
+			printf(PRINTF_INDENT "Page Handle: %s\n", session->project_handle);
+			printf(PRINTF_INDENT "\n");
+		}
+		else
+		{
+			printf(PRINTF_INDENT "Unknown command: %s", command);
+			printf(PRINTF_INDENT "Type \"help\" to see valid commands\n");
+			printf(PRINTF_INDENT "\n");
+		}
+	}
+
+	// Tell user we're exiting
 	printf(PRINTF_INDENT "\n");
-	printf(PRINTF_INDENT "...\n");
-	printf(PRINTF_INDENT "\n");
-	printf(PRINTF_INDENT "Destroying Cohost context\n");
+	printf(PRINTF_INDENT "Exiting...\n");
 
 	// Shutdown
+	printf(PRINTF_INDENT "Destroying Cohost session context\n");
 	Cohost_Destroy(session);
+	printf(PRINTF_INDENT "Shutting down CURL\n");
 	Cohost_Shutdown(curl);
 
 	// Exit
+	printf(PRINTF_INDENT "\n");
 	printf(PRINTF_INDENT "Cya later!\n");
+	printf(PRINTF_INDENT "\n");
 	return EXIT_SUCCESS;
 }
 
