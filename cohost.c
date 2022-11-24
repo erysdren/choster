@@ -21,17 +21,17 @@
 //
 
 // Initialize CURL
-CURL *Cohost_Initialize(void)
+void Cohost_Initialize(void)
 {
 	curl_global_init(CURL_GLOBAL_ALL);
-	return curl_easy_init();
 }
 
 // Attempt to login to cohost.org and return a session context
-cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_filename, CURL *curl)
+cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_filename)
 {
 	// Variables
 	struct curl_slist *headers = NULL;
+	struct curl_slist *cookies = NULL;
 	cohost_session_t *session;
 	curl_response_t resp_body;
 	curl_response_t resp_head;
@@ -46,12 +46,6 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	int i;
 
 	// Sanity checks
-	if (curl == NULL)
-	{
-		printf("ERROR: Provided CURL context was not properly initialized!\n");
-		return NULL;
-	}
-
 	if (email == NULL)
 	{
 		printf("ERROR: Provided email string is NULL!\n");
@@ -68,23 +62,26 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	session = calloc(1, sizeof(cohost_session_t));
 	url = calloc(512, sizeof(char));
 
+	// Initialize CURL
+	session->curl = curl_easy_init();
+
 	// Setup URL for GET request
 	snprintf(url, 512, "https://cohost.org/api/v1/login/salt?email=%s", email);
 
 	// Set CURLOPTs and send GET request
 	CURL_ResponseAllocate(&resp_body);
 	CURL_ResponseAllocate(&resp_head);
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	curl_easy_setopt(session->curl, CURLOPT_URL, url);
+	curl_easy_setopt(session->curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(session->curl, CURLOPT_COOKIEFILE, "");
 	#ifndef __DJGPP__
-	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
+	if (cookie_save_filename != NULL) curl_easy_setopt(session->curl, CURLOPT_COOKIEJAR, cookie_save_filename);
 	#endif
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
-	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &resp_head);
-	resp_code = curl_easy_perform(curl);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
+	resp_code = curl_easy_perform(session->curl);
 
 	// Error check
 	if (resp_code != CURLE_OK)
@@ -112,10 +109,10 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	// Set CURLOPTs and send POST request
 	CURL_ResponseAllocate(&resp_body);
 	CURL_ResponseAllocate(&resp_head);
-	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/login");
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post);
-	resp_code = curl_easy_perform(curl);
+	curl_easy_setopt(session->curl, CURLOPT_URL, "https://cohost.org/api/v1/login");
+	curl_easy_setopt(session->curl, CURLOPT_HTTPHEADER, headers);
+	curl_easy_setopt(session->curl, CURLOPT_POSTFIELDS, post);
+	resp_code = curl_easy_perform(session->curl);
 
 	// Error check
 	if (resp_code != CURLE_OK)
@@ -125,17 +122,17 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	}
 
 	// Get the session ID from the cookie
-	resp_code = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &session->cookies);
+	resp_code = curl_easy_getinfo(session->curl, CURLINFO_COOKIELIST, &cookies);
 
 	// Error check
 	if (resp_code != CURLE_OK)
 	{
-		printf("ERROR: curl_easy_perform() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		printf("ERROR: curl_easy_getinfo() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
 		return NULL;
 	}
 
 	// Really, really lazy cookie parsing
-	token = strtok(session->cookies->data, "\t");
+	token = strtok(cookies->data, "\t");
 
 	while(token != NULL)
 	{
@@ -151,9 +148,9 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	// Set CURLOPTs and send GET request for user info
 	CURL_ResponseAllocate(&resp_body);
 	CURL_ResponseAllocate(&resp_head);
-	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
-	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
-	resp_code = curl_easy_perform(curl);
+	curl_easy_setopt(session->curl, CURLOPT_HTTPGET, 1L);
+	curl_easy_setopt(session->curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
+	resp_code = curl_easy_perform(session->curl);
 
 	// Error check
 	if (resp_code != CURLE_OK)
@@ -186,20 +183,13 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 	if (cJSON_GetObjectItemCaseSensitive(json, "readOnly")->valueint > 0) session->flags |= USERFLAG_READONLY;
 	if (cJSON_GetObjectItemCaseSensitive(json, "modMode")->valueint > 0) session->flags |= USERFLAG_MODMODE;
 
-	session->email = calloc(strlen(email) + 1, sizeof(char));
-	memcpy(session->email, email, strlen(email));
-	session->email[strlen(email) + 1] = '\0';
-
 	session->session_id = calloc(strlen(token) + 1, sizeof(char));
 	memcpy(session->session_id, token, strlen(token));
 	session->session_id[strlen(token) + 1] = '\0';
 
-	session->project_handle = calloc(strlen(json_item->valuestring) + 1, sizeof(char));
-	memcpy(session->project_handle, json_item->valuestring, strlen(json_item->valuestring));
-	session->project_handle[strlen(json_item->valuestring)] = '\0';
-
 	// Free the memory we used
 	curl_slist_free_all(headers);
+	curl_slist_free_all(cookies);
 	cJSON_Delete(json);
 	free(resp_body.string);
 	free(resp_head.string);
@@ -213,7 +203,7 @@ cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_fi
 }
 
 // Attempt to login to cohost.org with a cookie and return a session context
-cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cookie_save_filename, CURL *curl)
+cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cookie_save_filename)
 {
 	// Variables
 	cohost_session_t *session;
@@ -222,13 +212,6 @@ cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cooki
 	CURLcode resp_code;
 	FILE *cookie_file;
 	int i;
-
-	// Sanity checks
-	if (curl == NULL)
-	{
-		printf("ERROR: Provided CURL context was not properly initialized!\n");
-		return NULL;
-	}
 
 	if (cookie_load_filename == NULL)
 	{
@@ -249,21 +232,24 @@ cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cooki
 	// Allocate data
 	session = calloc(1, sizeof(cohost_session_t));
 
+	// Initialize CURL
+	session->curl = curl_easy_init();
+
 	// Set CURLOPTs and send GET request for user info
 	CURL_ResponseAllocate(&resp_body);
 	CURL_ResponseAllocate(&resp_head);
-	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookie_load_filename);
+	curl_easy_setopt(session->curl, CURLOPT_HTTPGET, 1L);
+	curl_easy_setopt(session->curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(session->curl, CURLOPT_COOKIEFILE, cookie_load_filename);
 	#ifndef __DJGPP__
-	if (cookie_save_filename != NULL) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_save_filename);
+	if (cookie_save_filename != NULL) curl_easy_setopt(session->curl, CURLOPT_COOKIEJAR, cookie_save_filename);
 	#endif
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
-	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &resp_head);
-	curl_easy_setopt(curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
-	resp_code = curl_easy_perform(curl);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
+	curl_easy_setopt(session->curl, CURLOPT_URL, "https://cohost.org/api/v1/trpc/login.loggedIn");
+	resp_code = curl_easy_perform(session->curl);
 
 	// Error check
 	if (resp_code != CURLE_OK)
@@ -280,6 +266,7 @@ cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cooki
 	free(resp_body.string);
 	free(resp_head.string);
 
+	// Return a pointer to the session
 	return session;
 }
 
@@ -288,17 +275,73 @@ void Cohost_Destroy(cohost_session_t *session)
 {
 	if (session == NULL) return;
 	if (session->session_id) free(session->session_id);
-	if (session->project_handle) free(session->project_handle);
-	if (session->email) free(session->email);
-	if (session->cookies) curl_slist_free_all(session->cookies);
+	if (session->curl) curl_easy_cleanup(session->curl);
 	if (session) free(session);
 }
 
 // Shutdown CURL
-void Cohost_Shutdown(CURL *curl)
+void Cohost_Shutdown(void)
 {
-	curl_easy_cleanup(curl);
 	curl_global_cleanup();
+}
+
+// Get N number of notifications starting from the specified offset
+void Cohost_GetNotifications(int offset, int n, cohost_session_t *session)
+{
+	// Variables
+	curl_response_t resp_body;
+	curl_response_t resp_head;
+	CURLcode resp_code;
+	char *url;
+	char *cookie;
+	struct curl_slist *cookies = NULL;
+
+	url = calloc(512, sizeof(char));
+	cookie = calloc(512, sizeof(char));
+
+	// Setup URL for GET request
+	snprintf(url, 512, "https://cohost.org/api/v1/notifications/list?offset=%d?limit=%d", offset, n);
+	snprintf(cookie, 512, "connect.sid=%s;", session->session_id);
+
+	// Segfault madness
+	resp_code = curl_easy_getinfo(session->curl, CURLINFO_COOKIELIST, &cookies);
+
+	// Error check
+	if (resp_code != CURLE_OK)
+	{
+		printf("ERROR: curl_easy_getinfo() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		return;
+	}
+
+	// Set CURLOPTs and send GET request
+	CURL_ResponseAllocate(&resp_body);
+	CURL_ResponseAllocate(&resp_head);
+	curl_easy_setopt(session->curl, CURLOPT_URL, url);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, CURL_ResponseCatch);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
+	curl_easy_setopt(session->curl, CURLOPT_COOKIEFILE, "cookies.txt");
+	curl_easy_setopt(session->curl, CURLOPT_COOKIELIST, "RELOAD");
+	resp_code = curl_easy_perform(session->curl);
+
+	// Error check
+	if (resp_code != CURLE_OK)
+	{
+		printf("ERROR: curl_easy_perform() failed with error \"%s\"\n", curl_easy_strerror(resp_code));
+		return;
+	}
+
+	// Debug print
+	printf("%s\n", resp_body.string);
+	printf("%s\n", resp_head.string);
+
+	// Free the memory we used
+	curl_slist_free_all(cookies);
+	free(resp_body.string);
+	free(resp_head.string);
+	free(url);
+	free(cookie);
 }
 
 //

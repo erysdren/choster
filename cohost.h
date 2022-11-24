@@ -65,10 +65,8 @@ typedef struct
 	int user_id;
 	int project_id;
 	int flags;
-	char *email;
 	char *session_id;
-	char *project_handle;
-	struct curl_slist *cookies;
+	CURL *curl;
 } cohost_session_t;
 
 // CURL Response struct
@@ -82,11 +80,12 @@ typedef struct
 // Public functions
 //
 
-CURL *Cohost_Initialize(void);
-cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_filename, CURL *curl);
-cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cookie_save_filename, CURL *curl);
+void Cohost_Initialize(void);
+cohost_session_t *Cohost_Login(char *email, char *password, char *cookie_save_filename);
+cohost_session_t *Cohost_LoginWithCookie(char *cookie_load_filename, char *cookie_save_filename);
+void Cohost_GetNotifications(int offset, int n, cohost_session_t *session);
 void Cohost_Destroy(cohost_session_t *session);
-void Cohost_Shutdown(CURL *curl);
+void Cohost_Shutdown(void);
 
 //
 // Private functions

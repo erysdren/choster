@@ -128,15 +128,7 @@ int main(int argc, char *argv[])
 
 	// Initialize CURL
 	printf(PRINTF_INDENT "Initializing CURL\n");
-	curl = Cohost_Initialize();
-
-	// Error check
-	if (curl == NULL)
-	{
-		printf(PRINTF_INDENT "ERROR: CURL failed to initialize!\n");
-		return EXIT_FAILURE;
-	}
-
+	Cohost_Initialize();
 	printf(PRINTF_INDENT "CURL initialized successfully!\n");
 
 	// Login with provided args
@@ -144,11 +136,11 @@ int main(int argc, char *argv[])
 	printf(PRINTF_INDENT "Logging in to Cohost...\n");
 	if (mode == LOGIN_WITH_EMAIL_AND_PASSWORD && email != NULL && password != NULL)
 	{
-		session = Cohost_Login(email, password, credentials_save, curl);
+		session = Cohost_Login(email, password, credentials_save);
 	}
 	else if (mode == LOGIN_WITH_CREDENTIALS_FILE && credentials_load != NULL)
 	{
-		session = Cohost_LoginWithCookie(credentials_load, credentials_save, curl);
+		session = Cohost_LoginWithCookie(credentials_load, credentials_save);
 	}
 	else
 	{
@@ -171,6 +163,9 @@ int main(int argc, char *argv[])
 	printf(PRINTF_INDENT "Enter the heilp command to get started!\n");
 	printf(PRINTF_INDENT "\n");
 
+	// debugging
+	//Cohost_GetNotifications(0, 20, session);
+
 	// Text command parser
 	while (printf(PRINTF_INDENT) && fgets(command, sizeof(command), stdin) && strncmp(command, "exit", 4) != 0)
 	{
@@ -182,12 +177,16 @@ int main(int argc, char *argv[])
 			printf(PRINTF_INDENT "userinfo		- Display current user information\n");
 			printf(PRINTF_INDENT "\n");
 		}
+		else if (!strncmp(command, "notifs", 6))
+		{
+			Cohost_GetNotifications(0, 20, session);
+		}
 		else if (!strncmp(command, "userinfo", 8))
 		{
 			printf(PRINTF_INDENT "\n");
 			printf(PRINTF_INDENT "User ID: %d\n", session->user_id);
 			printf(PRINTF_INDENT "Page ID: %d\n", session->project_id);
-			printf(PRINTF_INDENT "Page Handle: %s\n", session->project_handle);
+			//printf(PRINTF_INDENT "Page Handle: %s\n", session->project_handle);
 			printf(PRINTF_INDENT "\n");
 		}
 		else
@@ -207,7 +206,7 @@ int main(int argc, char *argv[])
 	printf(PRINTF_INDENT "Destroying Cohost session context\n");
 	Cohost_Destroy(session);
 	printf(PRINTF_INDENT "Shutting down CURL\n");
-	Cohost_Shutdown(curl);
+	Cohost_Shutdown();
 
 	// Exit
 	printf(PRINTF_INDENT "\n");
