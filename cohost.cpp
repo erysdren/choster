@@ -202,7 +202,7 @@ class CohostNotification
 	// Public access
 	public:
 
-		//#include <sstream>
+		//
 		// Member variables
 		//
 
@@ -444,8 +444,6 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 void CohostUser::LoginWithCookieFile(string filename)
 {
 	// Variables
-	ostringstream ostringstream_buffer;
-	string string_buffer;
 	string response_body;
 	string response_head;
 	CURLcode response_code;
@@ -460,6 +458,7 @@ void CohostUser::LoginWithCookieFile(string filename)
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, filename);
+	curl_easy_setopt(curl, CURLOPT_COOKIELIST, "RELOAD");
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURLResponseCallback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURLResponseCallback);
@@ -474,6 +473,9 @@ void CohostUser::LoginWithCookieFile(string filename)
 	cout << response_body << "\n\n";
 	cout << response_head << "\n\n";
 	cout << endl;
+
+	// Populate the user info from the JSON response
+	PopulateUserInfo(response_body);
 }
 
 //
@@ -698,7 +700,8 @@ int main(int argc, char *argv[])
 	PRINT_INDENTED("Successfully initialized CURL!");
 
 	// Set a filename for saving cookies to
-	user.cookies_save_filename = cookies_save_filename;
+	if (cookies_save_filename.empty() == false)
+		user.cookies_save_filename = cookies_save_filename;
 
 	// Login based on the specified mode
 	switch (mode)
@@ -715,6 +718,7 @@ int main(int argc, char *argv[])
 
 		default:
 			COHOST_ERROR("Invalid login mode!");
+			break;
 	}
 
 	// Print stuff
