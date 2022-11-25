@@ -457,7 +457,7 @@ void CohostUser::LoginWithCookieFile(string filename)
 	// Set CURLOPTs
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, filename);
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, filename.c_str());
 	curl_easy_setopt(curl, CURLOPT_COOKIELIST, "RELOAD");
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURLResponseCallback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
@@ -469,10 +469,6 @@ void CohostUser::LoginWithCookieFile(string filename)
 	response_code = curl_easy_perform(curl);
 	if (response_code != CURLE_OK)
 		COHOST_ERROR("curl_easy_perform() failed with error: " << curl_easy_strerror(response_code));
-
-	cout << response_body << "\n\n";
-	cout << response_head << "\n\n";
-	cout << endl;
 
 	// Populate the user info from the JSON response
 	PopulateUserInfo(response_body);
