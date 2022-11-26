@@ -10,7 +10,7 @@
 //
 // DESCRIPTION:		Cohost API functions (C++)
 //
-// LAST EDITED:		November 25th, 2022
+// LAST EDITED:		November 26th, 2022
 //
 // ========================================================
 
@@ -572,7 +572,7 @@ void CohostUser::PopulateUserInfo(string response)
 	json = cJSON_GetObjectItemCaseSensitive(json, "result");
 	json = cJSON_GetObjectItemCaseSensitive(json, "data");
 	if (json == NULL)
-		COHOST_ERROR("Failed to create JSON object in PopulateUserInfo()!");
+		COHOST_ERROR("Failed to parse JSON object in PopulateUserInfo()!");
 
 	// Populate variables
 	user_id = cJSON_GetObjectItemCaseSensitive(json, "userId")->valueint;
@@ -594,6 +594,7 @@ void CohostUser::PopulateUserInfo(string response)
 //=========================================
 
 #define PRINT_INDENTED(str) do { cout << " >  " << str << "\n"; } while( false )
+#define PRINT_INDENTED_INPUT(str) do { cout << " >>  " << str; } while( false )
 
 enum CTI_LoginModes
 {
@@ -636,6 +637,7 @@ int main(int argc, char *argv[])
 	string password;
 	string cookies_load_filename;
 	string cookies_save_filename;
+	string command;
 	int c;
 	int mode;
 
@@ -723,13 +725,50 @@ int main(int argc, char *argv[])
 	PRINT_INDENTED("Printing user info:");
 	PRINT_INDENTED("");
 	PRINT_INDENTED("User ID: " << user.user_id);
-	PRINT_INDENTED("Project ID: " << user.project_id);
-	PRINT_INDENTED("Project Handle: " << user.project_handle);
+	PRINT_INDENTED("");
+	PRINT_INDENTED("Current Project ID: " << user.project_id);
+	PRINT_INDENTED("Current Project Handle: " << user.project_handle);
 	PRINT_INDENTED("");
 	PRINT_INDENTED("Logged In: " << user.logged_in);
 	PRINT_INDENTED("Mod Mode: " << user.mod_mode);
 	PRINT_INDENTED("Activated: " << user.activated);
 	PRINT_INDENTED("Read Only: " << user.read_only);
+	PRINT_INDENTED("");
+
+	// User input parser
+	while (command.compare("exit") != 0)
+	{
+		PRINT_INDENTED_INPUT("");
+		cin >> command;
+
+		if (command.compare("userinfo") == 0)
+		{
+			PRINT_INDENTED("");
+			PRINT_INDENTED("Current User Information:");
+			PRINT_INDENTED("");
+			PRINT_INDENTED("User ID: " << user.user_id);
+			PRINT_INDENTED("Project ID: " << user.project_id);
+			PRINT_INDENTED("Project Handle: " << user.project_handle);
+			PRINT_INDENTED("");
+			PRINT_INDENTED("Logged In: " << user.logged_in);
+			PRINT_INDENTED("Mod Mode: " << user.mod_mode);
+			PRINT_INDENTED("Activated: " << user.activated);
+			PRINT_INDENTED("Read Only: " << user.read_only);
+			PRINT_INDENTED("");
+		}
+		else if (command.compare("help") == 0)
+		{
+			PRINT_INDENTED("");
+			PRINT_INDENTED("Command Help:");
+			PRINT_INDENTED("");
+			PRINT_INDENTED("help	- Print this message");
+			PRINT_INDENTED("exit	- Exit the program");
+			PRINT_INDENTED("");
+			PRINT_INDENTED("userinfo	- Print current user information");
+			PRINT_INDENTED("");
+		}
+	}
+
 	PRINT_INDENTED("");
 	PRINT_INDENTED("Shutting down...");
 	PRINT_INDENTED("");
