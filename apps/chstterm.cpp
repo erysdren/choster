@@ -14,12 +14,126 @@
 //
 // ========================================================
 
+// Determine which version to build
+#ifndef GRAPHICS
+#define TERMINAL
+#endif
+
 // Cohost Header
 #include "cohost.hpp"
 
+#define TITLE "Cohost Terminal Interface v0.1"
+
 // ImGUI / ImTUI Headers
+#ifdef GRAPHICS
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+#else
 #include "imtui/imtui.h"
 #include "imtui/imtui-impl-ncurses.h"
+#endif
+
+#ifdef GRAPHICS
+
+#define FONT_WIDTH ImGui::GetFontSize() * 0.5f
+#define FONT_HEIGHT ImGui::GetFontSize()
+
+ImGuiIO &StartupSDL(SDL_Window **window, SDL_GLContext *context)
+{
+	// Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+	{
+		printf("Error: %s\n", SDL_GetError());
+		exit(-1);
+	}
+
+	// GL 3.0 + GLSL 130
+	const char* glsl_version = "#version 130";
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+
+	// Create window with graphics context
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window* win = SDL_CreateWindow(TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+	SDL_GLContext ctx = SDL_GL_CreateContext(win);
+	SDL_GL_MakeCurrent(win, ctx);
+	SDL_GL_SetSwapInterval(1);
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO(); (void)io;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplSDL2_InitForOpenGL(win, ctx);
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// Return values
+	*window = win;
+	*context = ctx;
+	return io;
+}
+
+void ShutdownSDL(SDL_Window *window, SDL_GLContext context)
+{
+	// Cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
+	SDL_GL_DeleteContext(context);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
+}
+
+void RenderSDL(SDL_Window *window, ImGuiIO &io, ImVec4 clear_color)
+{
+	// Rendering
+	ImGui::Render();
+	glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+	glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+	glClear(GL_COLOR_BUFFER_BIT);
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	SDL_GL_SwapWindow(window);
+}
+
+void NewFrameSDL(SDL_Window *window)
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL2_NewFrame(window);
+	ImGui::NewFrame();
+}
+
+void PollEventsSDL(bool *running, SDL_Window *window)
+{
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event))
+	{
+		ImGui_ImplSDL2_ProcessEvent(&event);
+		if (event.type == SDL_QUIT)
+			*running = false;
+		if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+			*running = false;
+	}
+}
+
+#else
+
+#define FONT_WIDTH 1
+#define FONT_HEIGHT 1
 
 // Initialize
 auto StartupTUI()
@@ -55,13 +169,23 @@ void RenderTUI(ImTui::TScreen *window)
 	ImTui_ImplNcurses_DrawScreen();
 }
 
+#endif
+
 // Entry point
 int main(int argc, char *argv[])
 {
 	// Variables
 	bool b_running = true;
+
+	#ifdef GRAPHICS
+	SDL_Window *window;
+	SDL_GLContext gl_context;
+	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+	ImGuiIO &io = StartupSDL(&window, &gl_context);
+	float font_scale = 2.0f;
+	#else
 	auto window = StartupTUI();
-	int window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	#endif
 
 	// Cohost variables
 	CohostUser user;
@@ -85,8 +209,14 @@ int main(int argc, char *argv[])
 
 	while (b_running)
 	{
-		// Start new frame
+		// Start new frame & poll events
+		#ifdef GRAPHICS
+		PollEventsSDL(&b_running, window);
+		NewFrameSDL(window);
+		ImGui::GetIO().FontGlobalScale = font_scale;
+		#else
 		NewFrameTUI();
+		#endif
 
 		// Main window
 		{
@@ -99,7 +229,7 @@ int main(int argc, char *argv[])
 			ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
 
 			// Begin window
-			if (!ImGui::Begin("Cohost Terminal Interface v0.1", nullptr, window_flags))
+			if (!ImGui::Begin(TITLE, &b_running, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus))
 				break;
 
 			// Menubar
@@ -121,7 +251,7 @@ int main(int argc, char *argv[])
 			// Text
 			if (ImGui::BeginTable("homepage", 1))
 			{
-				ImGui::TableSetupColumn(" Settings ", ImGuiTableColumnFlags_WidthFixed, 16.0f);
+				ImGui::TableSetupColumn(" Settings ", ImGuiTableColumnFlags_WidthFixed, 16.0f * FONT_WIDTH);
 
 				ImGui::TableNextColumn();
 
@@ -143,6 +273,11 @@ int main(int argc, char *argv[])
 				ImGui::Button(" Followers ");
 				ImGui::NewLine();
 				ImGui::Button(" Settings ");
+				#ifdef GRAPHICS
+				ImGui::NewLine();
+				ImGui::Text("Font Scale:");
+				ImGui::SliderFloat("##fontscale", &font_scale, 1.0f, 2.0f);
+				#endif
 
 				ImGui::EndTable();
 			}
@@ -160,8 +295,8 @@ int main(int argc, char *argv[])
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
 
 			// Set window properties
-			ImGui::SetNextWindowPos(ImVec2(16, 3), ImGuiCond_Always);
-			ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - 17, ImGui::GetIO().DisplaySize.y - 3), ImGuiCond_Always);
+			ImGui::SetNextWindowPos(ImVec2(16 * FONT_WIDTH, 3 * FONT_HEIGHT), ImGuiCond_Always);
+			ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - (17 * FONT_WIDTH), ImGui::GetIO().DisplaySize.y - (3 * FONT_HEIGHT)), ImGuiCond_Always);
 
 			// Begin window
 			if (!ImGui::Begin("Timeline", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
@@ -195,15 +330,14 @@ int main(int argc, char *argv[])
 			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
 
 			// Set window properties
-			ImGui::SetNextWindowPos(ImVec2(4, 4), ImGuiCond_Once);
-			ImGui::SetNextWindowSize(ImVec2(48, 10), ImGuiCond_Once);
+			ImGui::SetNextWindowPos(ImVec2(4 * FONT_WIDTH, 4 * FONT_HEIGHT), ImGuiCond_Once);
+			ImGui::SetNextWindowSize(ImVec2(48 * FONT_WIDTH, 10 * FONT_HEIGHT), ImGuiCond_Once);
 
 			// Begin window
 			if (!ImGui::Begin("Login", nullptr, ImGuiWindowFlags_NoCollapse))
 				return EXIT_FAILURE;
 
 			// Window elements
-
 			ImGui::NewLine();
 			ImGui::Text("Please enter your email and password:");
 			ImGui::NewLine();
@@ -226,11 +360,20 @@ int main(int argc, char *argv[])
 		}
 
 		// Render result
+		#ifdef GRAPHICS
+		RenderSDL(window, io, clear_color);
+		#else
 		RenderTUI(window);
+		#endif
 	}
 
 	// Shutdown
+
+	#ifdef GRAPHICS
+	ShutdownSDL(window, gl_context);
+	#else
 	ShutdownTUI();
+	#endif
 
 	return EXIT_SUCCESS;
 }

@@ -113,7 +113,8 @@ if(LIBCOHOST_BUILD_APPS)
 	target_link_libraries(chstterm cohostxx ${IMTUI_LIBRARIES})
 
 	## CHSTGRPH
-	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstgrph.cpp)
+	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
 	target_link_libraries(chstgrph cohostxx ${IMGUI_LIBRARIES})
+	target_compile_definitions(chstgrph PUBLIC "GRAPHICS=1")
 
 endif()
