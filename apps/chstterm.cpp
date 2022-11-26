@@ -198,13 +198,19 @@ int main(int argc, char *argv[])
 		ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x - 17, io.DisplaySize.y - 3), ImGuiCond_Always);
 
 		// Push styles
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
 
 		// Begin window
-		if (!ImGui::Begin("Timeline", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse))
+		if (!ImGui::Begin("Timeline", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
 			return EXIT_FAILURE;
 
 		// Window elements
+		ImGui::NewLine();
+		ImGui::TextWrapped("Im trying to explain how i came to the understanding that this reality here on earth is truly a matrix and that there is a reptilian race from the constellation of astro-world who are controlling virtual reality here on earth.");
+		ImGui::NewLine();
+		ImGui::TextWrapped("reincarnation here has nothing to do with our spiritual growth from cradle to grave and beyond and were never going to get out of this situation without planet x. planet x is not a catastrophe, it is a prison break.");
+		ImGui::NewLine();
+		ImGui::TextWrapped("the force of this planet as it tears apart the electro-magnetic force field that surrounds the earth will finally reveal the matrix and everyone is going to see it; there will be no doubt, there will be no fighting over belief systems, we are going to have all of the masks pulled away. that is the future for us with planet x.");
 		ImGui::NewLine();
 		ImGui::TextWrapped("Im trying to explain how i came to the understanding that this reality here on earth is truly a matrix and that there is a reptilian race from the constellation of astro-world who are controlling virtual reality here on earth.");
 		ImGui::NewLine();
