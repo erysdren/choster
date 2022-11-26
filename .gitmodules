@@ -10,3 +10,6 @@
 [submodule "thirdparty/nettle"]
 	path = thirdparty/nettle
 	url = https://github.com/gnutls/nettle
+[submodule "thirdparty/imtui"]
+	path = thirdparty/imtui
+	url = https://github.com/ggerganov/imtui
