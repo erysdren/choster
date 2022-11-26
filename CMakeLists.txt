@@ -36,7 +36,11 @@ option(LIBCOHOST_BUILD_APPS "Build libcohost example and test applications" ON)
 
 if(LIBCOHOST_BUILD_APPS)
 
+	set(IMTUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imtui)
 	add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+
+	set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
+	include(${CMAKE_SOURCE_DIR}/thirdparty/imgui.cmake)
 
 endif()
 
@@ -51,12 +55,20 @@ set(LIBCOHOST_LIBS ${LIBCOHOST_LIBS_DYNAMIC} ${LIBCOHOST_LIBS_STATIC})
 
 if(LIBCOHOST_BUILD_APPS)
 
-	## ImGUI / ImTUI libraries
+	## ImGui libraries
 	set(IMGUI_LIBRARIES
+		imgui
+		imgui-backend-sdl
+		imgui-backend-opengl3
+	)
+
+	## ImTui libraries
+	set(IMTUI_LIBRARIES
 		imtui
 		imtui-ncurses
 		imgui-for-imtui
 	)
+
 endif()
 
 ##
@@ -98,6 +110,10 @@ if(LIBCOHOST_BUILD_APPS)
 
 	## CHSTTERM
 	add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
-	target_link_libraries(chstterm cohostxx ${IMGUI_LIBRARIES})
+	target_link_libraries(chstterm cohostxx ${IMTUI_LIBRARIES})
+
+	## CHSTGRPH
+	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstgrph.cpp)
+	target_link_libraries(chstgrph cohostxx ${IMGUI_LIBRARIES})
 
 endif()

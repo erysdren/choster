@@ -25,7 +25,7 @@
 CohostUser cohost_user;
 
 // Initialize
-auto tui_init()
+auto StartupTUI()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -36,14 +36,30 @@ auto tui_init()
 }
 
 // Shutdown
-void tui_shutdown()
+void ShutdownTUI()
 {
 	ImTui_ImplText_Shutdown();
 	ImTui_ImplNcurses_Shutdown();
 }
 
+// Start a new frame
+void NewFrameTUI()
+{
+	ImTui_ImplNcurses_NewFrame();
+	ImTui_ImplText_NewFrame();
+	ImGui::NewFrame();
+}
+
+// Render frame
+void RenderTUI(ImTui::TScreen *window)
+{
+	ImGui::Render();
+	ImTui_ImplText_RenderDrawData(ImGui::GetDrawData(), window);
+	ImTui_ImplNcurses_DrawScreen();
+}
+
 // Login window
-void tui_window_login(bool *b_logged_in)
+void WindowLogin(bool *b_logged_in)
 {
 	// Variables
 	static char email[64];
@@ -87,15 +103,14 @@ int main(int argc, char *argv[])
 {
 	// Variables
 	bool b_running = true;
-	auto window = tui_init();
-	int nframes = 0;
-	float fval = 1.23f;
+	auto window = StartupTUI();
 	int window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
 	// Cohost variables
 	bool b_logged_in = false;
 	bool b_logging_in = false;
 	int num_notifications = 0;
+	int num_bookmarks = 0;
 
 	// Yea
 	cohost_user.cookies_save_filename = "chstterm.ini";
@@ -111,9 +126,7 @@ int main(int argc, char *argv[])
 	while (b_running)
 	{
 		// Start new frame
-		ImTui_ImplNcurses_NewFrame();
-		ImTui_ImplText_NewFrame();
-		ImGui::NewFrame();
+		NewFrameTUI();
 
 		// Set window properties
 		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
@@ -124,13 +137,13 @@ int main(int argc, char *argv[])
 		ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.51f, 0.14f, 0.31f, 1.0f));
 
 		// Begin window
-		if (!ImGui::Begin("Cohost Terminal Interface", nullptr, window_flags))
+		if (!ImGui::Begin("Cohost Terminal Interface v0.1", nullptr, window_flags))
 			break;
 
 		// Menubar
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu(" Actions "))
+			if (ImGui::BeginMenu("Actions "))
 			{
 				if (ImGui::MenuItem(" Login ", "begin new session", nullptr, !b_logged_in)) b_logging_in = true;
 				ImGui::MenuItem(" Post ", "chost like a champ", nullptr, b_logged_in);
@@ -143,17 +156,26 @@ int main(int argc, char *argv[])
 			ImGui::EndMenuBar();
 		}
 
+		// Padding
+		ImGui::NewLine();
+
 		// Text
 		if (ImGui::BeginTable("homepage", 3))
 		{
+			ImGui::TableSetupColumn(" Settings ", ImGuiTableColumnFlags_WidthFixed, 16.0f);
+			ImGui::TableSetupColumn(" Timeline ", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 4.0f);
+
+			ImGui::TableHeadersRow();
+			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 
 			ImGui::NewLine();
-			ImGui::Button(" Notifications ");
+			ImGui::Button(" Notifs ");
 			ImGui::SameLine();
-			ImGui::Text(" ( %d )", num_notifications);
+			ImGui::Text("(%d)", num_notifications);
 			ImGui::NewLine();
-			ImGui::Button(" Bookmarked Tags ");
+			ImGui::Button(" Bookmarks ");
 			ImGui::NewLine();
 			ImGui::Button(" Search ");
 			ImGui::NewLine();
@@ -169,16 +191,12 @@ int main(int argc, char *argv[])
 
 			ImGui::TableNextColumn();
 
-			/*
-			ImGui::Text("Demo text:");
 			ImGui::NewLine();
-			ImGui::Text("NFrames = %d", nframes++);
-			ImGui::Text("Mouse Pos : x = %g, y = %g", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
-			ImGui::Text("Time per frame %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::Text("Float:");
-			ImGui::SameLine();
-			ImGui::SliderFloat("##float", &fval, 0.0f, 10.0f);
-			*/
+			ImGui::TextWrapped("Im trying to explain how i came to the understanding that this reality here on earth is truly a matrix and that there is a reptilian race from the constellation of astro-world who are controlling virtual reality here on earth.");
+			ImGui::NewLine();
+			ImGui::TextWrapped("reincarnation here has nothing to do with our spiritual growth from cradle to grave and beyond and were never going to get out of this situation without planet x. planet x is not a catastrophe, it is a prison break.");
+			ImGui::NewLine();
+			ImGui::TextWrapped("the force of this planet as it tears apart the electro-magnetic force field that surrounds the earth will finally reveal the matrix and everyone is going to see it; there will be no doubt, there will be no fighting over belief systems, we are going to have all of the masks pulled away. that is the future for us with planet x.");
 
 			ImGui::EndTable();
 		}
@@ -189,18 +207,16 @@ int main(int argc, char *argv[])
 		// Pop styles
 		ImGui::PopStyleColor(2);
 
+		// Display login window
 		if (b_logging_in == true && b_logged_in == false)
-		{
-			tui_window_login(&b_logged_in);
-		}
-	
+			WindowLogin(&b_logged_in);
+
 		// Render result
-		ImGui::Render();
-		ImTui_ImplText_RenderDrawData(ImGui::GetDrawData(), window);
-		ImTui_ImplNcurses_DrawScreen();
+		RenderTUI(window);
 	}
 
-	tui_shutdown();
+	// Shutdown
+	ShutdownTUI();
 
 	return EXIT_SUCCESS;
 }
