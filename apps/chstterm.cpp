@@ -1,6 +1,6 @@
 // ========================================================
 //
-// FILE:			/test0002.cpp
+// FILE:			/apps/chstterm.cpp
 //
 // AUTHORS:			Jaycie Ewald
 //
@@ -14,192 +14,193 @@
 //
 // ========================================================
 
-// Cohost API header
+// Cohost Header
 #include "cohost.hpp"
 
-// getopt header
-#include <getopt.h>
+// ImGUI / ImTUI Headers
+#include "imtui/imtui.h"
+#include "imtui/imtui-impl-ncurses.h"
 
-#define PRINT_INDENTED(str) do { cout << " >  " << str << "\n"; } while( false )
-#define PRINT_INDENTED_INPUT(str) do { cout << " >>  " << str; } while( false )
+// Globals
+CohostUser cohost_user;
 
-enum CTI_LoginModes
+// Initialize
+auto tui_init()
 {
-	CTI_LOGIN_EMAILPASS = 1,
-	CTI_LOGIN_COOKIE = 2,
-};
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	auto window = ImTui_ImplNcurses_Init(true);
+	ImTui_ImplText_Init();
 
-void PrintLogo()
-{
-	PRINT_INDENTED("  _____  ____    __ __  ____    ____ ______     ____    ___   _____");
-	PRINT_INDENTED(" / ___/ / __ \\  / // / / __ \\  / __//_  __/    / __ \\  / _ \\ / ___/");
-	PRINT_INDENTED("/ /__  / /_/ / / _  / / /_/ / _\\ \\   / /    _ / /_/ / / , _// (_ / ");
-	PRINT_INDENTED("\\___/  \\____/ /_//_/  \\____/ /___/  /_/    (_)\\____/ /_/|_| \\___/  ");
-	PRINT_INDENTED("");
+	return window;
 }
 
-void PrintHelp()
+// Shutdown
+void tui_shutdown()
 {
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Cohost Terminal Interface v0.1");
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Commandline Usage:");
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Email address:");
-	PRINT_INDENTED("	-e <email>");
-	PRINT_INDENTED("Password:");
-	PRINT_INDENTED("	-p <password>");
-	PRINT_INDENTED("Load cookies from file:");
-	PRINT_INDENTED("	-l <filename>");
-	PRINT_INDENTED("Save cookies to file:");
-	PRINT_INDENTED("	-s <filename>");
-	PRINT_INDENTED("");
+	ImTui_ImplText_Shutdown();
+	ImTui_ImplNcurses_Shutdown();
+}
+
+// Login window
+void tui_window_login(bool *b_logged_in)
+{
+	// Variables
+	static char email[64];
+	static char password[64];
+
+	// Set window properties
+	ImGui::SetNextWindowPos(ImVec2(4, 4), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(48, 10), ImGuiCond_Once);
+
+	// Push styles
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+
+	// Begin window
+	if (!ImGui::Begin("Login", nullptr, ImGuiWindowFlags_NoCollapse))
+		return;
+
+	// Window elements
+
+	ImGui::NewLine();
+	ImGui::Text("Please enter your email and password:");
+	ImGui::NewLine();
+	ImGui::InputText("Email", email, IM_ARRAYSIZE(email), ImGuiInputTextFlags_None);
+	ImGui::NewLine();
+	ImGui::InputText("Password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsNoBlank);
+	ImGui::NewLine();
+	if (ImGui::Button(" Login ") && strlen(password) > 0 && strlen(email) > 0)
+	{
+		cohost_user.LoginWithEmailPass(email, password);
+		*b_logged_in = true;
+	}
+
+	// End window
+	ImGui::End();
+
+	// Pop styles
+	ImGui::PopStyleColor(1);
 }
 
 // Entry point
 int main(int argc, char *argv[])
 {
 	// Variables
-	string email;
-	string password;
-	string cookies_load_filename;
-	string cookies_save_filename;
-	string command;
-	int c;
-	int mode;
+	bool b_running = true;
+	auto window = tui_init();
+	int nframes = 0;
+	float fval = 1.23f;
+	int window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-	// If no arguments, print help text
-	if (argc < 2)
+	// Cohost variables
+	bool b_logged_in = false;
+	bool b_logging_in = false;
+	int num_notifications = 0;
+
+	// Yea
+	cohost_user.cookies_save_filename = "chstterm.ini";
+
+	// Try a cookie if exists
+	if (FILE *test = fopen("chstterm.ini", "r"))
 	{
-		PrintHelp();
-		return EXIT_SUCCESS;
+		fclose(test);
+		cohost_user.LoginWithCookieFile("chstterm.ini");
+		b_logged_in = true;
 	}
 
-	// Parse arguments
-	while ((c = getopt(argc, argv, "e:p:l:s:?")) != -1)
+	while (b_running)
 	{
-		switch (c)
-		{
-			// Email
-			case 'e':
-				email = optarg;
-				mode = CTI_LOGIN_EMAILPASS;
-				break;
+		// Start new frame
+		ImTui_ImplNcurses_NewFrame();
+		ImTui_ImplText_NewFrame();
+		ImGui::NewFrame();
 
-			// Password
-			case 'p':
-				password = optarg;
-				mode = CTI_LOGIN_EMAILPASS;
-				break;
+		// Set window properties
+		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
 
-			// Load cookies from file
-			case 'l':
-				cookies_load_filename = optarg;
-				mode = CTI_LOGIN_COOKIE;
-				break;
+		// Push styles
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.51f, 0.14f, 0.31f, 1.0f));
 
-			// Save cookies to file
-			case 's':
-				cookies_save_filename = optarg;
-				break;
-
-			// Help
-			case '?':
-				PrintHelp();
-				return EXIT_SUCCESS;
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	// Print a cute logo
-	PrintLogo();
-
-	PRINT_INDENTED("Initializing CURL...");
-
-	// Define this variable later so the constructor isn't called right away
-	CohostUser user;
-
-	PRINT_INDENTED("Successfully initialized CURL!");
-
-	// Set a filename for saving cookies to
-	if (cookies_save_filename.empty() == false)
-		user.cookies_save_filename = cookies_save_filename;
-
-	// Login based on the specified mode
-	switch (mode)
-	{
-		case CTI_LOGIN_EMAILPASS:
-			PRINT_INDENTED("Logging into Cohost with email and password...");
-			user.LoginWithEmailPass(email, password);
+		// Begin window
+		if (!ImGui::Begin("Cohost Terminal Interface", nullptr, window_flags))
 			break;
 
-		case CTI_LOGIN_COOKIE:
-			PRINT_INDENTED("Logging into Cohost with cookie file...");
-			user.LoginWithCookieFile(cookies_load_filename);
-			break;
+		// Menubar
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu(" Actions "))
+			{
+				if (ImGui::MenuItem(" Login ", "begin new session", nullptr, !b_logged_in)) b_logging_in = true;
+				ImGui::MenuItem(" Post ", "chost like a champ", nullptr, b_logged_in);
 
-		default:
-			COHOST_ERROR("Invalid login mode!");
-			break;
+				ImGui::NewLine();
+				if (ImGui::MenuItem(" Quit ", "stop chosting")) b_running = false;
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
+		}
+
+		// Text
+		if (ImGui::BeginTable("homepage", 3))
+		{
+			ImGui::TableNextColumn();
+
+			ImGui::NewLine();
+			ImGui::Button(" Notifications ");
+			ImGui::SameLine();
+			ImGui::Text(" ( %d )", num_notifications);
+			ImGui::NewLine();
+			ImGui::Button(" Bookmarked Tags ");
+			ImGui::NewLine();
+			ImGui::Button(" Search ");
+			ImGui::NewLine();
+			ImGui::Button(" Profile ");
+			ImGui::NewLine();
+			ImGui::Button(" Drafts ");
+			ImGui::NewLine();
+			ImGui::Button(" Following ");
+			ImGui::NewLine();
+			ImGui::Button(" Followers ");
+			ImGui::NewLine();
+			ImGui::Button(" Settings ");
+
+			ImGui::TableNextColumn();
+
+			/*
+			ImGui::Text("Demo text:");
+			ImGui::NewLine();
+			ImGui::Text("NFrames = %d", nframes++);
+			ImGui::Text("Mouse Pos : x = %g, y = %g", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+			ImGui::Text("Time per frame %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("Float:");
+			ImGui::SameLine();
+			ImGui::SliderFloat("##float", &fval, 0.0f, 10.0f);
+			*/
+
+			ImGui::EndTable();
+		}
+
+		// End ImGui processing
+		ImGui::End();
+
+		// Pop styles
+		ImGui::PopStyleColor(2);
+
+		if (b_logging_in == true && b_logged_in == false)
+		{
+			tui_window_login(&b_logged_in);
+		}
+	
+		// Render result
+		ImGui::Render();
+		ImTui_ImplText_RenderDrawData(ImGui::GetDrawData(), window);
+		ImTui_ImplNcurses_DrawScreen();
 	}
 
-	// Print stuff
-	PRINT_INDENTED("Successfully logged into Cohost!");
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Printing user info:");
-	PRINT_INDENTED("");
-	PRINT_INDENTED("User ID: " << user.user_id);
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Current Project ID: " << user.project_id);
-	PRINT_INDENTED("Current Project Handle: " << user.project_handle);
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Logged In: " << user.logged_in);
-	PRINT_INDENTED("Mod Mode: " << user.mod_mode);
-	PRINT_INDENTED("Activated: " << user.activated);
-	PRINT_INDENTED("Read Only: " << user.read_only);
-	PRINT_INDENTED("");
+	tui_shutdown();
 
-	// User input parser
-	while (command.compare("exit") != 0)
-	{
-		PRINT_INDENTED_INPUT("");
-		cin >> command;
-
-		if (command.compare("userinfo") == 0)
-		{
-			PRINT_INDENTED("");
-			PRINT_INDENTED("Current User Information:");
-			PRINT_INDENTED("");
-			PRINT_INDENTED("User ID: " << user.user_id);
-			PRINT_INDENTED("Project ID: " << user.project_id);
-			PRINT_INDENTED("Project Handle: " << user.project_handle);
-			PRINT_INDENTED("");
-			PRINT_INDENTED("Logged In: " << user.logged_in);
-			PRINT_INDENTED("Mod Mode: " << user.mod_mode);
-			PRINT_INDENTED("Activated: " << user.activated);
-			PRINT_INDENTED("Read Only: " << user.read_only);
-			PRINT_INDENTED("");
-		}
-		else if (command.compare("help") == 0)
-		{
-			PRINT_INDENTED("");
-			PRINT_INDENTED("Command Help:");
-			PRINT_INDENTED("");
-			PRINT_INDENTED("help	- Print this message");
-			PRINT_INDENTED("exit	- Exit the program");
-			PRINT_INDENTED("");
-			PRINT_INDENTED("userinfo	- Print current user information");
-			PRINT_INDENTED("");
-		}
-	}
-
-	PRINT_INDENTED("");
-	PRINT_INDENTED("Shutting down...");
-	PRINT_INDENTED("");
-
-	// Exit
 	return EXIT_SUCCESS;
-};
+}

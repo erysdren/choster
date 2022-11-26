@@ -51,13 +51,12 @@ set(LIBCOHOST_LIBS ${LIBCOHOST_LIBS_DYNAMIC} ${LIBCOHOST_LIBS_STATIC})
 
 if(LIBCOHOST_BUILD_APPS)
 
-	## ImGUI / ImTUI
+	## ImGUI / ImTUI libraries
 	set(IMGUI_LIBRARIES
 		imtui
 		imtui-ncurses
 		imgui-for-imtui
 	)
-
 endif()
 
 ##

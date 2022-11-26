@@ -1,6 +1,6 @@
 // ========================================================
 //
-// FILE:			/main.c
+// FILE:			/apps/test0001.c
 //
 // AUTHORS:			Jaycie Ewald
 //
@@ -10,7 +10,7 @@
 //
 // DESCRIPTION:		Cohost terminal app
 //
-// LAST EDITED:		November 23rd, 2022
+// LAST EDITED:		November 26th, 2022
 //
 // ========================================================
 
