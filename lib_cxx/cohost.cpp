@@ -292,7 +292,6 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	headers = curl_slist_append(headers, "charset: utf-8");
 
 	// Set CURLOPTs
-	curl_easy_setopt(curl, CURLOPT_HTTPPOST, 1L);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, char_buffer);
 	curl_easy_setopt(curl, CURLOPT_URL, COHOST_URL_LOGIN);

@@ -34,13 +34,29 @@ option(LIBCOHOST_BUILD_APPS "Build libcohost example and test applications" ON)
 ## Thirdparty Libraries
 ##
 
-if(LIBCOHOST_BUILD_APPS)
+## Curl
+add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/curl)
 
-	set(IMTUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imtui)
-	add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+## cJSON
+option(ENABLE_CJSON_TEST "Enable building cJSON test" OFF)
+set(ENABLE_CJSON_TEST OFF)
+add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/cjson)
+
+## Nettle
+set(NETTLE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/nettle)
+include(${CMAKE_SOURCE_DIR}/thirdparty/nettle.cmake)
+
+if(LIBCOHOST_BUILD_APPS)
 
 	set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
 	include(${CMAKE_SOURCE_DIR}/thirdparty/imgui.cmake)
+
+	if(NOT MINGW)
+
+		set(IMTUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+		add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+
+	endif()
 
 endif()
 
@@ -49,9 +65,16 @@ endif()
 ##
 
 ## Thirdparty libraries
-set(LIBCOHOST_LIBS_DYNAMIC curl)
-set(LIBCOHOST_LIBS_STATIC libcjson.a libnettle.a)
-set(LIBCOHOST_LIBS ${LIBCOHOST_LIBS_DYNAMIC} ${LIBCOHOST_LIBS_STATIC})
+set(LIBCOHOST_LIBS
+	libcurl
+	cjson
+	nettle
+)
+
+set(LIBCOHOST_INCLUDES
+	${CMAKE_SOURCE_DIR}/thirdparty
+	${CMAKE_SOURCE_DIR}/thirdparty/curl/include
+)
 
 if(LIBCOHOST_BUILD_APPS)
 
@@ -81,7 +104,7 @@ set(LIBCOHOST_SRC
 )
 
 add_library(cohost STATIC ${LIBCOHOST_SRC})
-target_include_directories(cohost PUBLIC ${CMAKE_SOURCE_DIR}/lib_c)
+target_include_directories(cohost PUBLIC ${CMAKE_SOURCE_DIR}/lib_c ${LIBCOHOST_INCLUDES})
 target_link_libraries(cohost ${LIBCOHOST_LIBS})
 
 ## CXX version (current)
@@ -91,7 +114,7 @@ set(LIBCOHOSTXX_SRC
 )
 
 add_library(cohostxx STATIC ${LIBCOHOSTXX_SRC})
-target_include_directories(cohostxx PUBLIC ${CMAKE_SOURCE_DIR}/lib_cxx)
+target_include_directories(cohostxx PUBLIC ${CMAKE_SOURCE_DIR}/lib_cxx ${LIBCOHOST_INCLUDES})
 target_link_libraries(cohostxx ${LIBCOHOST_LIBS})
 
 ##
@@ -100,17 +123,21 @@ target_link_libraries(cohostxx ${LIBCOHOST_LIBS})
 
 if(LIBCOHOST_BUILD_APPS)
 
-	## Test0001
-	add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
-	target_link_libraries(test0001 cohost)
+		## Test0001
+		add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
+		target_link_libraries(test0001 cohost)
 
-	## Test0002
-	add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
-	target_link_libraries(test0002 cohostxx)
+		## Test0002
+		add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
+		target_link_libraries(test0002 cohostxx)
 
-	## CHSTTERM
-	add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
-	target_link_libraries(chstterm cohostxx ${IMTUI_LIBRARIES})
+	if(NOT MINGW)
+
+		## CHSTTERM
+		add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
+		target_link_libraries(chstterm cohostxx ${IMTUI_LIBRARIES})
+
+	endif()
 
 	## CHSTGRPH
 	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
