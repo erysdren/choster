@@ -31,9 +31,11 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#define INI_FILENAME "chstgrph.ini"
 #else
 #include "imtui/imtui.h"
 #include "imtui/imtui-impl-ncurses.h"
+#define INI_FILENAME "chstterm.ini"
 #endif
 
 #ifdef GRAPHICS
@@ -197,13 +199,13 @@ int main(int argc, char *argv[])
 	static char password[64];
 
 	// Yea
-	user.cookies_save_filename = "chstterm.ini";
+	user.cookies_save_filename = INI_FILENAME;
 
 	// Try a cookie if exists
-	if (FILE *test = fopen("chstterm.ini", "r"))
+	if (FILE *test = fopen(INI_FILENAME, "r"))
 	{
 		fclose(test);
-		user.LoginWithCookieFile("chstterm.ini");
+		user.LoginWithCookieFile(INI_FILENAME);
 		b_logged_in = true;
 	}
 
