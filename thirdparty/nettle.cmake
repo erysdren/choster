@@ -1,16 +1,16 @@
 ## ========================================================
 ##
-## FILE:		/thirdparty/nettle.cmake
+## FILE:			/thirdparty/nettle.cmake
 ##
-## AUTHORS:		Jaycie Ewald
+## AUTHORS:			Jaycie Ewald
 ##
-## PROJECT:		libcohost
+## PROJECT:			libcohost
 ##
-## LICENSE:		ACSL v1.4
+## LICENSE:			ACSL v1.4
 ##
-## DESCRIPTION:	Nettle CMake project definition
+## DESCRIPTION:		Nettle CMake project definition
 ##
-## LAST EDITED:	November 26th, 2022
+## LAST EDITED:		November 26th, 2022
 ##
 ## ========================================================
 

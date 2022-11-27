@@ -30,6 +30,28 @@ set(CMAKE_BUILD_TYPE Release)
 ## Options
 option(LIBCOHOST_BUILD_APPS "Build libcohost example and test applications" ON)
 
+## DJGPP test
+if(DJGPP)
+
+## PDCurses
+set(PDCURSES_DIR ${CMAKE_SOURCE_DIR}/thirdparty/PDCurses)
+include(${CMAKE_SOURCE_DIR}/thirdparty/pdcurses.cmake)
+
+add_compile_options("-std=c++11")
+add_compile_definitions("alloca=__builtin_alloca")
+
+## ImTui
+set(MINGW TRUE)
+set(IMTUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/imtui)
+target_compile_definitions(imtui-ncurses PUBLIC "_WIN32")
+
+## DOSTEST
+add_executable(dostest ${CMAKE_SOURCE_DIR}/apps/dostest.cpp)
+target_link_libraries(dostest imtui imtui-ncurses)
+
+else()
+
 ##
 ## Global compile definitions
 ##
@@ -148,3 +170,5 @@ if(LIBCOHOST_BUILD_APPS)
 	target_compile_definitions(chstgrph PUBLIC "GRAPHICS=1")
 
 endif()
+
+endif() ## DJGPP
