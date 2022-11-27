@@ -1,36 +1,63 @@
 # libcohost
 
-A C library for interfacing with cohost.org
+A C / C++ library for interacting with cohost.org
 
 Currently it allows you to login with a valid email and password. You can also login on subsequent attempts using a cookie saved from the previous session.
 
-Valid commandline arguments:
+Valid commandline arguments for the test applications:
 
 ```
 Set email:
 -e <email>
 
 Set password:
--p <pass>
+-p <password>
 
-Credentials file to load from:
--c <file>
+File to load cookies from:
+-l <filename>
 
-Credentials file to save to:
--s <file>
+File to save cookies to:
+-s <filename>
 ```
 
-Requires curl, cJSON and nettle.
-
-An MS-DOS version, built via DJGPP, is being worked on.
+Requires libcurl, libcJSON and libnettle.
 
 ## Building
 
-For a Linux target, enter the source folder in the terminal and type `make`.
+To build for a Linux target, you can enter a series of commands like the following:
 
-To run an experimental DOS DJGPP build, run `make DJGPP=TRUE`
+```
+git clone --recurse-submodules https://github.com/JaycieErysdren/libcohost
+cd libcohost
+mkdir cmake-build-amd64
+cd cmake-build-amd64
+cmake ..
+make
+```
 
-Windows builds are currently untested.
+To build for a Windows target from Linux, you can enter a series of commands like the following:
+
+```
+git clone --recurse-submodules https://github.com/JaycieErysdren/libcohost
+cd libcohost
+mkdir cmake-build-win64
+cd cmake-build-win64
+cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64-x86_64.cmake ..
+make
+```
+
+To build for a DOS target from Linux, you can enter a series of commands like the following:
+
+(Note: this will probably not work)
+
+```
+git clone --recurse-submodules https://github.com/JaycieErysdren/libcohost
+cd libcohost
+mkdir cmake-build-dos32
+cd cmake-build-dos32
+cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/i586-pc-msdosdjgpp.cmake ..
+make
+```
 
 ## License
 
