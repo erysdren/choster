@@ -31,6 +31,17 @@ set(CMAKE_BUILD_TYPE Debug)
 option(LIBCOHOST_BUILD_APPS "Build libcohost example and test applications" ON)
 
 ##
+## Global compile definitions
+##
+
+## Release mode
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+
+	add_compile_options("-O3")
+
+endif()
+
+##
 ## Thirdparty Libraries
 ##
 
@@ -105,7 +116,7 @@ set(LIBCOHOST_SRC
 
 add_library(cohost STATIC ${LIBCOHOST_SRC})
 target_include_directories(cohost PUBLIC ${CMAKE_SOURCE_DIR}/lib_c ${LIBCOHOST_INCLUDES})
-target_link_libraries(cohost ${LIBCOHOST_LIBS})
+target_link_libraries(cohost PUBLIC ${LIBCOHOST_LIBS})
 
 ## CXX version (current)
 set(LIBCOHOSTXX_SRC
@@ -115,7 +126,7 @@ set(LIBCOHOSTXX_SRC
 
 add_library(cohostxx STATIC ${LIBCOHOSTXX_SRC})
 target_include_directories(cohostxx PUBLIC ${CMAKE_SOURCE_DIR}/lib_cxx ${LIBCOHOST_INCLUDES})
-target_link_libraries(cohostxx ${LIBCOHOST_LIBS})
+target_link_libraries(cohostxx PUBLIC ${LIBCOHOST_LIBS})
 
 ##
 ## Applications
@@ -124,24 +135,24 @@ target_link_libraries(cohostxx ${LIBCOHOST_LIBS})
 if(LIBCOHOST_BUILD_APPS)
 
 		## Test0001
-		add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
+		add_executable(test0001 WIN32 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
 		target_link_libraries(test0001 cohost)
 
 		## Test0002
-		add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
-		target_link_libraries(test0002 cohostxx)
+		add_executable(test0002 WIN32 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
+		target_link_libraries(test0002 PUBLIC cohostxx)
 
 	if(NOT MINGW)
 
 		## CHSTTERM
-		add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
-		target_link_libraries(chstterm cohostxx ${IMTUI_LIBRARIES})
+		add_executable(chstterm WIN32 ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
+		target_link_libraries(chstterm PUBLIC cohostxx ${IMTUI_LIBRARIES})
 
 	endif()
 
 	## CHSTGRPH
-	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
-	target_link_libraries(chstgrph cohostxx ${IMGUI_LIBRARIES})
+	add_executable(chstgrph WIN32 ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
+	target_link_libraries(chstgrph PUBLIC cohostxx ${IMGUI_LIBRARIES})
 	target_compile_definitions(chstgrph PUBLIC "GRAPHICS=1")
 
 endif()
