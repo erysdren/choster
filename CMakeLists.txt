@@ -134,24 +134,24 @@ target_link_libraries(cohostxx PUBLIC ${LIBCOHOST_LIBS})
 
 if(LIBCOHOST_BUILD_APPS)
 
-		## Test0001
-		add_executable(test0001 WIN32 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
-		target_link_libraries(test0001 cohost)
+	## Test0001
+	add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
+	target_link_libraries(test0001 cohost)
 
-		## Test0002
-		add_executable(test0002 WIN32 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
-		target_link_libraries(test0002 PUBLIC cohostxx)
+	## Test0002
+	add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
+	target_link_libraries(test0002 PUBLIC cohostxx)
 
 	if(NOT MINGW)
 
 		## CHSTTERM
-		add_executable(chstterm WIN32 ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
+		add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
 		target_link_libraries(chstterm PUBLIC cohostxx ${IMTUI_LIBRARIES})
 
 	endif()
 
 	## CHSTGRPH
-	add_executable(chstgrph WIN32 ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
+	add_executable(chstgrph ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
 	target_link_libraries(chstgrph PUBLIC cohostxx ${IMGUI_LIBRARIES})
 	target_compile_definitions(chstgrph PUBLIC "GRAPHICS=1")
 
