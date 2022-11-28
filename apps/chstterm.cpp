@@ -31,6 +31,10 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include "chfontr.h"
+#include "chfontb.h"
+#include "chfonti.h"
+#include "chfontbi.h"
 #define INI_FILENAME "chstgrph.ini"
 #else
 #include "imtui/imtui.h"
@@ -73,6 +77,7 @@ ImGuiIO &StartupSDL(SDL_Window **window, SDL_GLContext *context)
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO(); (void)io;
+	io.Fonts->AddFontFromMemoryTTF(Atkinson_Hyperlegible_Regular_102_ttf, Atkinson_Hyperlegible_Regular_102_ttf_len, 24.0f, NULL, NULL);
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -184,7 +189,7 @@ int main(int argc, char *argv[])
 	SDL_GLContext gl_context;
 	ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 	ImGuiIO &io = StartupSDL(&window, &gl_context);
-	float font_scale = 2.0f;
+	float font_scale = 1.0f;
 	#else
 	auto window = StartupTUI();
 	#endif
@@ -245,49 +250,45 @@ int main(int argc, char *argv[])
 
 				ImGui::EndMenuBar();
 			}
+		}
 
-			//ImGui::BeginCombo("Project: ", Cohost::GetUserInfo().project_handle.c_str(), ImGuiComboFlags_None);
-			//ImGui::EndCombo();
+		// Left sidebar window
+		{
+			// Set window properties
+			ImGui::SetNextWindowPos(ImVec2(0, 3 * FONT_HEIGHT), ImGuiCond_Always);
+			ImGui::SetNextWindowSize(ImVec2(15.0f * FONT_WIDTH, ImGui::GetIO().DisplaySize.y - (3.0f * FONT_HEIGHT)), ImGuiCond_Always);
 
-			// Text
-			if (ImGui::BeginTable("homepage", 1))
-			{
-				ImGui::TableSetupColumn(" Settings ", ImGuiTableColumnFlags_WidthFixed, 16.0f * FONT_WIDTH);
+			// Begin window
+			if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
+				return EXIT_FAILURE;
 
-				ImGui::TableNextColumn();
+			// Window elements
+			ImGui::NewLine();
+			ImGui::Button(" Notifs ");
+			ImGui::SameLine();
+			ImGui::Text("(%d)", num_notifications);
+			ImGui::NewLine();
+			ImGui::Button(" Bookmarks ");
+			ImGui::NewLine();
+			ImGui::Button(" Search ");
+			ImGui::NewLine();
+			ImGui::Button(" Profile ");
+			ImGui::NewLine();
+			ImGui::Button(" Drafts ");
+			ImGui::NewLine();
+			ImGui::Button(" Following ");
+			ImGui::NewLine();
+			ImGui::Button(" Followers ");
+			ImGui::NewLine();
+			ImGui::Button(" Settings ");
+			#ifdef GRAPHICS
+			ImGui::NewLine();
+			ImGui::Text("Font Scale:");
+			ImGui::SliderFloat("##fontscale", &font_scale, 1.0f, 2.0f);
+			#endif
 
-				ImGui::NewLine();
-				ImGui::Button(" Notifs ");
-				ImGui::SameLine();
-				ImGui::Text("(%d)", num_notifications);
-				ImGui::NewLine();
-				ImGui::Button(" Bookmarks ");
-				ImGui::NewLine();
-				ImGui::Button(" Search ");
-				ImGui::NewLine();
-				ImGui::Button(" Profile ");
-				ImGui::NewLine();
-				ImGui::Button(" Drafts ");
-				ImGui::NewLine();
-				ImGui::Button(" Following ");
-				ImGui::NewLine();
-				ImGui::Button(" Followers ");
-				ImGui::NewLine();
-				ImGui::Button(" Settings ");
-				#ifdef GRAPHICS
-				ImGui::NewLine();
-				ImGui::Text("Font Scale:");
-				ImGui::SliderFloat("##fontscale", &font_scale, 1.0f, 2.0f);
-				#endif
-
-				ImGui::EndTable();
-			}
-
-			// End ImGui processing
+			// End window
 			ImGui::End();
-
-			// Pop styles
-			ImGui::PopStyleColor(2);
 		}
 
 		// Timeline window
@@ -297,7 +298,7 @@ int main(int argc, char *argv[])
 
 			// Set window properties
 			ImGui::SetNextWindowPos(ImVec2(16 * FONT_WIDTH, 3 * FONT_HEIGHT), ImGuiCond_Always);
-			ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - (17 * FONT_WIDTH), ImGui::GetIO().DisplaySize.y - (3 * FONT_HEIGHT)), ImGuiCond_Always);
+			ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x - (17.0f * FONT_WIDTH), ImGui::GetIO().DisplaySize.y - (3.0f * FONT_HEIGHT)), ImGuiCond_Always);
 
 			// Begin window
 			if (!ImGui::Begin("Timeline", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse))
