@@ -14,6 +14,9 @@
 //
 // ========================================================
 
+#ifndef __COHOST_HEADER__
+#define __COHOST_HEADER__
+
 //
 // Headers
 //
@@ -62,123 +65,89 @@ using namespace std;
 
 //=========================================
 //
-// CohostNotification Class
+// Cohost namespace (public)
 //
 //=========================================
 
-class CohostNotification
+enum CohostStringProps
 {
-	// Public access
-	public:
-
-		//
-		// Member variables
-		//
-
-		// The type of notification that this is.
-		// Can be "like", "comment", or "follow".
-		string type;
-
-		// The time this notification was created.
-		// Format: (year)-(month)-(day)T(hour):(minute):(second).(milisecond)(timezone)
-		string created_at;
-
-		// The ID of the project (user) that this notification came from.
-		int from_project_id;
-
-		// The post ID that this notification is in response to.
-		int to_post_id;
-
-		// The relationship ID between the user and the notification sender (?).
-		int relationship_id;
-
-		// The ID of the comment left by the user.
-		string comment_id;
-
-		// The ID of the comment that the notification is replying to.
-		string in_reply_to;
+	CohostStringProp_None,
+	CohostStringProp_CookieFile,
 };
 
-//=========================================
-//
-// CohostUser Class
-//
-//=========================================
-
-class CohostUser
+namespace Cohost
 {
-	// Public access
-	public:
+	//
+	// Classes
+	//
 
-		//
-		// Member variables
-		//
+	// Notification class
+	class Notification
+	{
+		public:
+			// The type of notification that this is.
+			// Can be "like", "comment", or "follow"
+			string type;
 
-		// Numerical ID of the user, ordered sequentially.
-		int user_id;
+			// The time this notification was created
+			// Format: (year)-(month)-(day)T(hour):(minute):(second).(milisecond)(timezone)
+			string created_at;
 
-		// The ID of the project that the user is currently using.
-		int project_id;
+			// The ID of the project (user) that this notification came from
+			int from_project_id;
 
-		// The handle of the project that the user is currently using.
-		string project_handle;
+			// The post ID that this notification is in response to
+			int to_post_id;
 
-		// User booleans.
-		bool logged_in;
-		bool mod_mode;
-		bool activated;
-		bool read_only;
+			// The relationship ID between the user and the notification sender (?)
+			int relationship_id;
 
-		// The ID of the current session.
-		string session_id;
+			// The ID of the comment left by the user
+			string comment_id;
 
-		// Filename to save cookies to.
-		string cookies_save_filename;
+			// The ID of the comment that the notification is replying to
+			string in_reply_to;
+	};
 
-		//
-		// Member functions
-		//
+	// User class
+	class UserInfo
+	{
+		public:
+			// Numerical ID of the user, ordered sequentially
+			int user_id;
 
-		// Constructor function
-		CohostUser();
+			// The ID of the project that the user is currently using
+			int project_id;
 
-		// Destructor function
-		~CohostUser();
+			// The handle of the project that the user is currently using
+			string project_handle;
 
-		// Login functions
-		void LoginWithEmailPass(string email, string password);
-		void LoginWithSessionID(string id);
-		void LoginWithCookieFile(string filename);
+			// User booleans
+			bool logged_in;
+			bool mod_mode;
+			bool activated;
+			bool read_only;
+	};
 
-		// Notification functions
-		void GetNotifications(vector<CohostNotification> &out);
+	//
+	// Functions
+	//
 
-	// Private access
-	private:
+	// Bootstrap
+	bool Initialize();
+	bool Shutdown();
+	bool SetStringProperty(int property, string str);
 
-		//
-		// Member variables
-		//
+	// Login functions
+	bool LoginWithEmailPass(string email, string password);
+	bool LoginWithSessionID(string id);
+	bool LoginWithCookieFile(string filename);
 
-		// CURL
-		CURL *curl;
+	// Notification
+	bool GetNotifications(int offset, int limit, vector<Notification> &out);
 
-		// Cryptography
-		string salt;
-		string clienthash;
+	// UserInfo
+	UserInfo GetUserInfo();
+}
 
-		//
-		// Member functions
-		//
-
-		// CURL
-		void CURLInit();
-		static size_t CURLResponseCallback(void *contents, size_t size, size_t n, void *user);
-
-		// Cryptography
-		void DecodeSalt(string response);
-		void EncodeClientHash(string password);
-
-		// Populate user info
-		void PopulateUserInfo(string response);
-};
+#endif // __COHOST_HEADER__

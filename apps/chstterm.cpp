@@ -190,7 +190,6 @@ int main(int argc, char *argv[])
 	#endif
 
 	// Cohost variables
-	CohostUser user;
 	bool b_logged_in = false;
 	bool b_logging_in = false;
 	int num_notifications = 0;
@@ -198,16 +197,13 @@ int main(int argc, char *argv[])
 	static char email[64];
 	static char password[64];
 
-	// Yea
-	user.cookies_save_filename = INI_FILENAME;
+	// Set cookie filename
+	Cohost::SetStringProperty(CohostStringProp_CookieFile, INI_FILENAME);
+	Cohost::Initialize();
 
 	// Try a cookie if exists
-	if (FILE *test = fopen(INI_FILENAME, "r"))
-	{
-		fclose(test);
-		user.LoginWithCookieFile(INI_FILENAME);
+	if (Cohost::LoginWithCookieFile(INI_FILENAME) == true)
 		b_logged_in = true;
-	}
 
 	while (b_running)
 	{
@@ -249,6 +245,9 @@ int main(int argc, char *argv[])
 
 				ImGui::EndMenuBar();
 			}
+
+			//ImGui::BeginCombo("Project: ", Cohost::GetUserInfo().project_handle.c_str(), ImGuiComboFlags_None);
+			//ImGui::EndCombo();
 
 			// Text
 			if (ImGui::BeginTable("homepage", 1))
@@ -350,8 +349,8 @@ int main(int argc, char *argv[])
 
 			if (ImGui::Button(" Login ") && strlen(password) > 0 && strlen(email) > 0)
 			{
-				user.LoginWithEmailPass(email, password);
-				b_logged_in = true;
+				if (Cohost::LoginWithEmailPass(email, password) == true)
+					b_logged_in = true;
 			}
 
 			// End window
@@ -374,6 +373,7 @@ int main(int argc, char *argv[])
 	#ifdef GRAPHICS
 	ShutdownSDL(window, gl_context);
 	#else
+	Cohost::Shutdown();
 	ShutdownTUI();
 	#endif
 

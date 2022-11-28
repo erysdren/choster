@@ -22,41 +22,122 @@
 
 //=========================================
 //
-// CohostNotification Class
+// Cohost namespace (private)
 //
 //=========================================
 
-//=========================================
-//
-// CohostUser Class
-//
-//=========================================
+namespace Cohost
+{
+	//
+	// Variables
+	//
 
+	// Numerical ID of the user, ordered sequentially
+	int user_id;
+
+	// The ID of the project that the user is currently using
+	int project_id;
+
+	// The handle of the project that the user is currently using
+	string project_handle;
+
+	// User booleans
+	bool logged_in;
+	bool mod_mode;
+	bool activated;
+	bool read_only;
+
+	// The ID of the current session
+	string session_id;
+
+	// Filename to save cookies to
+	string cookies_filename;
+
+	// CURL
+	CURL *curl;
+
+	// Salt string returned from login
+	string salt;
+
+	// Client hash string generated from the salt
+	string client_hash;
+
+	//
+	// Functions
+	//
+
+	// CURL
+	static size_t CURLResponseCallback(void *contents, size_t size, size_t n, void *user);
+
+	// Cryptography
+	bool DecodeSalt(string response);
+	bool EncodeClientHash(string password);
+
+	// Helpers
+	bool PopulateUserInfo(string response);
+}
+
+//
 //
 // Public functions
 //
+//
 
-// CohostUser constructor
-CohostUser::CohostUser()
+//
+// Bootstrap
+//
+
+// Initialize CURL
+bool Cohost::Initialize()
 {
-	COHOST_DEBUG_MESSAGE("CohostUser constructor called.");
+	// Variables
+	CURLcode response_code;
 
-	// Initialize CURL
-	CURLInit();
+	// Initialize global CURL and our specific instance
+	response_code = curl_global_init(CURL_GLOBAL_ALL);
+	curl = curl_easy_init();
+
+	if (response_code != CURLE_OK || curl == NULL)
+		return false;
+
+	return true;
 }
 
-// CohostUser destructor
-CohostUser::~CohostUser()
+// Shutdown CURL
+bool Cohost::Shutdown()
 {
-	COHOST_DEBUG_MESSAGE("CohostUser destructor called.");
-
 	// Cleanup CURL
 	curl_easy_cleanup(curl);
 	curl_global_cleanup();
+
+	return true;
 }
 
+// Set a string property in the Cohost instance
+bool Cohost::SetStringProperty(int property, string str)
+{
+	switch (property)
+	{
+		case CohostStringProp_None:
+			return true;
+
+		case CohostStringProp_CookieFile:
+			cookies_filename = str;
+			return true;
+
+		default:
+			break;
+	}
+
+	return false;
+}
+
+//
+// Login
+//
+
 // Login with an email and password
-void CohostUser::LoginWithEmailPass(string email, string password)
+bool Cohost::LoginWithEmailPass(string email, string password)
 {
 	// Variables
 	ostringstream ostringstream_buffer;
@@ -68,11 +149,9 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	struct curl_slist *cookies = NULL;
 	char *char_buffer;
 
-	COHOST_DEBUG_MESSAGE("Logging into cohost.org with an email and password.");
-
 	// Sanity checks
-	if (email.empty()) COHOST_ERROR("The email provided by the user was an empty string!");
-	if (password.empty()) COHOST_ERROR("The password provided by the user was an empty string!");
+	if (email.empty()) return false; // JAYCIE: add an error message here
+	if (password.empty()) return false; // JAYCIE: add an error message here
 
 	// Get our URL
 	ostringstream_buffer << COHOST_URL_LOGIN_SALT << "?email=" << email;
@@ -81,7 +160,7 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
-	if (cookies_save_filename.empty() == false) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookies_save_filename.c_str());
+	if (cookies_filename.empty() == false) curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookies_filename.c_str());
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURLResponseCallback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
 	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURLResponseCallback);
@@ -94,14 +173,18 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 		COHOST_ERROR("curl_easy_perform() failed with error: " << curl_easy_strerror(response_code));
 
 	// Decode Salt
-	DecodeSalt(response_body);
+	if (DecodeSalt(response_body) == false)
+		return false;
+		// JAYCIE: add an error message here
 
 	// Encode ClientHash
-	EncodeClientHash(password);
+	if (EncodeClientHash(password) == false)
+		return false;
+		// JAYCIE: add an error message here
 
 	// Sanity checks
-	if (salt.empty()) COHOST_ERROR("Something went wrong decoding the Salt in LoginWithEmailPass()!");
-	if (clienthash.empty()) COHOST_ERROR("Something went wrong encoding the ClientHash in LoginWithEmailPass()!");
+	if (salt.empty()) return false; // JAYCIE: add an error message here
+	if (client_hash.empty()) return false; // JAYCIE: add an error message here
 
 	// Clear the string buffers
 	ostringstream_buffer.str("");
@@ -110,7 +193,7 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	response_head.clear();
 
 	// Make a JSON string for the POST request
-	ostringstream_buffer << "{ \"email\" : \"" << email << "\", \"clientHash\" : \"" << clienthash << "\" }";
+	ostringstream_buffer << "{ \"email\" : \"" << email << "\", \"clientHash\" : \"" << client_hash << "\" }";
 
 	// For some reason I have to do this
 	char_buffer = (char *)calloc(ostringstream_buffer.str().length() + 1, sizeof(char));
@@ -130,7 +213,8 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	// Perform the POST request
 	response_code = curl_easy_perform(curl);
 	if (response_code != CURLE_OK)
-		COHOST_ERROR("curl_easy_perform() failed with error: " << curl_easy_strerror(response_code));
+		return false;
+		// JAYCIE: add an error message here
 
 	// Clear the string buffers
 	response_body.clear();
@@ -143,29 +227,39 @@ void CohostUser::LoginWithEmailPass(string email, string password)
 	// Perform the GET request
 	response_code = curl_easy_perform(curl);
 	if (response_code != CURLE_OK)
-		COHOST_ERROR("curl_easy_perform() failed with error: " << curl_easy_strerror(response_code));
+		return false;
+		// JAYCIE: add an error message here
 
 	// Populate the user info from the JSON response
-	PopulateUserInfo(response_body);
+	if (PopulateUserInfo(response_body) == false)
+		return false;
+		// JAYCIE: add an error message here
 
 	// Clean up memory
 	curl_slist_free_all(headers);
 	free(char_buffer);
+
+	return true;
 }
 
 // Login with a cookie file
-void CohostUser::LoginWithCookieFile(string filename)
+bool Cohost::LoginWithCookieFile(string filename)
 {
 	// Variables
 	string response_body;
 	string response_head;
 	CURLcode response_code;
 
-	COHOST_DEBUG_MESSAGE("Logging into cohost.org with a cookie file.");
-
 	// Sanity checks
-	if (filename.empty()) COHOST_ERROR("The filename provided by the user was an empty string!");
-	if (FILE *test_if_exists = fopen(filename.c_str(), "r")) fclose(test_if_exists); else COHOST_ERROR("The file provided by the user does not exist!");
+	if (filename.empty())
+		return false;
+		// JAYCIE: add an error message here
+
+	if (FILE *test_if_exists = fopen(filename.c_str(), "r"))
+		fclose(test_if_exists);
+	else
+		return false;
+		// JAYCIE: add an error message here
 
 	// Set CURLOPTs
 	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
@@ -181,41 +275,152 @@ void CohostUser::LoginWithCookieFile(string filename)
 	// Perform the GET request
 	response_code = curl_easy_perform(curl);
 	if (response_code != CURLE_OK)
-		COHOST_ERROR("curl_easy_perform() failed with error: " << curl_easy_strerror(response_code));
+		return false;
+		// JAYCIE: add an error message here
 
 	// Populate the user info from the JSON response
-	PopulateUserInfo(response_body);
+	if (PopulateUserInfo(response_body) == false)
+		return false;
+		// JAYCIE: add an error message here
+
+	return true;
 }
 
+//
+// Notification
+//
+
+bool Cohost::GetNotifications(int offset, int limit, vector<Notification> &out)
+{
+	// Variables
+	string response_body;
+	string response_head;
+	CURLcode response_code;
+	cJSON *json_root;
+	cJSON *json_arrayitem;
+	cJSON *json_object;
+	int i;
+	Notification notification;
+	ostringstream url;
+
+	url << COHOST_URL_NOTIFS_LIST << "?offset=" << offset << "&limit=" << limit;
+
+	// Set CURLOPTs
+	curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CURLResponseCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CURLResponseCallback);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, &response_head);
+	curl_easy_setopt(curl, CURLOPT_URL, url.str().c_str());
+
+	// Perform the GET request
+	response_code = curl_easy_perform(curl);
+	if (response_code != CURLE_OK)
+		return false;
+		// JAYCIE: add an error message here
+
+	// Parse the json response
+	json_root = cJSON_ParseWithLength(response_body.c_str(), response_body.length());
+	json_root = cJSON_GetObjectItemCaseSensitive(json_root, "notifications");
+	if (json_root == NULL)
+		return false;
+		// JAYCIE: add an error message here
+
+	// Populate notification array
+	for (i = 0; i < limit; i++)
+	{
+		json_arrayitem = cJSON_GetArrayItem(json_root, i);
+
+		// JAYCIE: make this prettier plz
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "commentId");
+		if (json_object != NULL) notification.comment_id = json_object->valuestring;
+		else notification.comment_id = "";
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "createdAt");
+		if (json_object != NULL) notification.created_at = json_object->valuestring;
+		else notification.created_at = "";
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "fromProjectId");
+		if (json_object != NULL) notification.from_project_id = json_object->valueint;
+		else notification.from_project_id = -1;
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "inReplyTo");
+		if (json_object != NULL) notification.in_reply_to = json_object->valuestring;
+		else notification.in_reply_to = "";
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "relationshipId");
+		if (json_object != NULL) notification.relationship_id = json_object->valueint;
+		else notification.relationship_id = -1;
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "toPostId");
+		if (json_object != NULL) notification.to_post_id = json_object->valueint;
+		else notification.to_post_id = -1;
+
+		json_object = cJSON_GetObjectItemCaseSensitive(json_arrayitem, "type");
+		if (json_object != NULL) notification.type = json_object->valuestring;
+		else notification.type = "";
+
+		out.push_back(notification);
+	}
+
+	// Clean up memory
+	cJSON_Delete(json_root);
+
+	return true;
+}
+
+//
+// UserInfo
+//
+
+// Return information about the user currently logged in
+Cohost::UserInfo Cohost::GetUserInfo()
+{
+	// Variables
+	UserInfo u;
+
+	// Booleans
+	u.activated = activated;
+	u.logged_in = logged_in;
+	u.mod_mode = mod_mode;
+	u.read_only = read_only;
+
+	// Strings
+	u.project_handle = project_handle;
+	u.project_id = project_id;
+
+	// Integers
+	u.user_id = user_id;
+
+	// Return the UserInfo object
+	return u;
+}
+
+//
 //
 // Private functions
 //
+//
 
-// Initialize CURL
-void CohostUser::CURLInit()
-{
-	// Variables
-	CURLcode response_code;
-
-	COHOST_DEBUG_MESSAGE("Initializing CURL.");
-
-	// Initialize global CURL and our specific instance
-	response_code = curl_global_init(CURL_GLOBAL_ALL);
-	curl = curl_easy_init();
-
-	if (response_code != CURLE_OK || curl == NULL)
-		COHOST_ERROR("libCURL failed to initialize!");
-}
+//
+// CURL
+//
 
 // Callback for catching CURL responses
-size_t CohostUser::CURLResponseCallback(void *contents, size_t size, size_t n, void *user)
+size_t Cohost::CURLResponseCallback(void *contents, size_t size, size_t n, void *user)
 {
 	((string*)user)->append((char*)contents, size * n);
 	return size * n;
 }
 
+//
+// Cryptography
+//
+
 // Decode the Salt from the JSON response
-void CohostUser::DecodeSalt(string response)
+bool Cohost::DecodeSalt(string response)
 {
 	// Variables
 	cJSON *json;
@@ -223,17 +428,17 @@ void CohostUser::DecodeSalt(string response)
 	int len;
 	char *char_buffer;
 
-	COHOST_DEBUG_MESSAGE("Decoding Salt.");
-
 	// Parse the JSON response
 	json = cJSON_ParseWithLength(response.c_str(), response.length());
 	if (json == NULL)
-		COHOST_ERROR("Failed to parse JSON response in DecodeSalt()!");
+		return false;
+		// JAYCIE: add an error message here
 
 	// Get the salt string
 	json = cJSON_GetObjectItemCaseSensitive(json, "salt");
 	if (json == NULL)
-		COHOST_ERROR("Failed to find Salt in JSON response in DecodeSalt()!");
+		return false;
+		// JAYCIE: add an error message here
 
 	// Modify the string appropriately
 	string_buffer = json->valuestring;
@@ -245,7 +450,8 @@ void CohostUser::DecodeSalt(string response)
 	len = Base64_DecodedSize(string_buffer.c_str());
 	char_buffer = (char *)calloc(len, sizeof(char));
 	if (!Base64_Decode(string_buffer.c_str(), (unsigned char *)char_buffer, len))
-		COHOST_ERROR("Failed to decode Base64 in DecodeSalt()!");
+		return false;
+		// JAYCIE: add an error message here
 
 	// Assign Salt to the decoded string
 	salt = char_buffer;
@@ -253,10 +459,12 @@ void CohostUser::DecodeSalt(string response)
 	// Clean up the memory
 	cJSON_Delete(json);
 	free(char_buffer);
+
+	return true;
 }
 
 // Encode the client hash with sha384
-void CohostUser::EncodeClientHash(string password)
+bool Cohost::EncodeClientHash(string password)
 {
 	// Variables
 	uint8_t *char_buffer;
@@ -264,18 +472,28 @@ void CohostUser::EncodeClientHash(string password)
 	// Allocate hash char buffer
 	char_buffer = (uint8_t *)calloc(128, sizeof(char));
 
+	if (char_buffer == NULL)
+		return false;
+		// JAYCIE: add an error message here
+
 	// use nettle to generate it
 	nettle_pbkdf2_hmac_sha384(password.length(), (uint8_t *)password.c_str(), 200000, salt.length(), (uint8_t *)salt.c_str(), 128, char_buffer);
 
 	// Encode clienthash
-	clienthash = Base64_Encode(char_buffer, strlen((char *)char_buffer));
+	client_hash = Base64_Encode(char_buffer, strlen((char *)char_buffer));
 
 	// Clean up the memory
 	free(char_buffer);
+
+	return true;
 }
 
+//
+// Helpers
+//
+
 // Populate the user info from the JSON response
-void CohostUser::PopulateUserInfo(string response)
+bool Cohost::PopulateUserInfo(string response)
 {
 	// Variables
 	cJSON *json;
@@ -285,7 +503,8 @@ void CohostUser::PopulateUserInfo(string response)
 	json = cJSON_GetObjectItemCaseSensitive(json, "result");
 	json = cJSON_GetObjectItemCaseSensitive(json, "data");
 	if (json == NULL)
-		COHOST_ERROR("Failed to parse JSON object in PopulateUserInfo()!");
+		return false;
+		// JAYCIE: add an error message here
 
 	// Populate variables
 	user_id = cJSON_GetObjectItemCaseSensitive(json, "userId")->valueint;
@@ -298,4 +517,6 @@ void CohostUser::PopulateUserInfo(string response)
 
 	// Clean up the memory
 	cJSON_Delete(json);
+
+	return true;
 }

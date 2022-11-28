@@ -153,12 +153,16 @@ target_link_libraries(cohostxx ${LIBCOHOST_LIBS})
 if(LIBCOHOST_BUILD_APPS)
 
 	## Test0001
-	add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
-	target_link_libraries(test0001 cohost)
+	## add_executable(test0001 ${CMAKE_SOURCE_DIR}/apps/test0001.c)
+	## target_link_libraries(test0001 cohost)
 
 	## Test0002
-	add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
-	target_link_libraries(test0002 cohostxx)
+	## add_executable(test0002 ${CMAKE_SOURCE_DIR}/apps/test0002.cpp)
+	## target_link_libraries(test0002 cohostxx)
+
+	## Test0003
+	add_executable(test0003 ${CMAKE_SOURCE_DIR}/apps/test0003.cpp)
+	target_link_libraries(test0003 cohostxx)
 
 	## CHSTTERM
 	add_executable(chstterm ${CMAKE_SOURCE_DIR}/apps/chstterm.cpp)
