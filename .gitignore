@@ -1,20 +1,9 @@
 # local files
-/local/
-
-# compiled thirdparty libs (DJGPP)
-/libs/
+local/
 
 # vscode
-/**/.vscode
+.vscode/
 *.code-workspace
 
 # cmake
-/**/cmake-build-*/
-
-# build artifacts
-build/
-*.o
-
-# dev
-run.sh
-runxx.sh
+cmake-build-*/
