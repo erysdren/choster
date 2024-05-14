@@ -1,21 +1,31 @@
 
-TARGET ?= choster
+EXEC ?= choster
+LIB ?= libcohost.a
 RM ?= rm -f
 CC ?= gcc
+AR ?= ar
 PKGCONFIG ?= pkg-config
 
-override CFLAGS += $(shell $(PKGCONFIG) pdcurses --cflags)
-override LDFLAGS += $(shell $(PKGCONFIG) pdcurses --libs)
+override CFLAGS += -std=c89 -pedantic -Wextra -Wall -Wno-sign-compare
+override LDFLAGS +=
 
-OBJS = main.o
+ifeq ($(DEBUG),1)
+override CFLAGS += -g3
+endif
 
-all: clean $(TARGET)
+EXEC_OBJECTS = main.o
+LIB_OBJECTS = libcohost.o
+
+all: clean $(EXEC) $(LIB)
 
 clean:
-	$(RM) $(OBJS) $(TARGET)
+	$(RM) $(EXEC_OBJECTS) $(EXEC) $(LIB)
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+$(EXEC): $(LIB) $(EXEC_OBJECTS)
+	$(CC) -o $@ $^ $(LIB) $(LDFLAGS)
+
+$(LIB): $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

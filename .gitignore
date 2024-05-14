@@ -1,11 +1,12 @@
 # untracked files
 untracked/
 
-# cmake
-cmake-build*/
+# cmake builds
+/**/cmake-build*/
 
-# build
-cohost
-*.exe
-*.o
-*.obj
+# build files
+source/choster
+source/*.exe
+source/*.o
+source/*.obj
+source/libcohost.a
