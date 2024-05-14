@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 	}
 
 	/* create session */
-	if ((r = libcohost_session_new(&session, NULL, NULL, NULL)) != LIBCOHOST_RESULT_OK)
+	if ((r = libcohost_session_new(&session, argv[1], argv[2], NULL)) != LIBCOHOST_RESULT_OK)
 	{
 		printf("libcohost error: %s\n", libcohost_result_string(r));
 		return 1;

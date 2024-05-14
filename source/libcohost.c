@@ -38,6 +38,7 @@ SOFTWARE.
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
 
@@ -47,11 +48,22 @@ SOFTWARE.
 #define ZALLOC(sz) calloc(1, sz)
 #define UNUSED(x) ((void)(x))
 
+#define COHOST_API_URL "https://cohost.org/api/v1"
+#define COHOST_LOGIN_URL COHOST_API_URL "/login"
+
+typedef struct curl_response_t {
+	char *string;
+	size_t len_string;
+} curl_response_t;
+static void curl_response_allocate(curl_response_t *response);
+static size_t curl_response_catch(void *pointer, size_t size, size_t nmemb, curl_response_t *response);
+
 /* startup library */
 int libcohost_init(void)
 {
 	if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0)
 		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
+
 	return LIBCOHOST_RESULT_OK;
 }
 
@@ -66,7 +78,8 @@ const char *libcohost_result_string(int r)
 {
 	static const char *results[] = {
 		"Ok",
-		"Memory allocation fail",
+		"General library failure",
+		"Memory allocation failure",
 		"Couldn't connect to cohost.org",
 		"Bad login credentials",
 		"Failed to initialize libcurl"
@@ -79,16 +92,37 @@ const char *libcohost_result_string(int r)
 }
 
 /* create a new cohost session */
-int libcohost_session_new(libcohost_session_t *session, char *email, char *pass, char *cookies)
+int libcohost_session_new(libcohost_session_t *session, char *email, char *password, char *cookie_save_filename)
 {
-	UNUSED(email);
-	UNUSED(pass);
-	UNUSED(cookies);
+	static char url[512];
+	curl_response_t resp_body;
+	curl_response_t resp_head;
+
+	UNUSED(cookie_save_filename);
+
+	if (email == NULL || password == NULL)
+		return LIBCOHOST_RESULT_BAD_CREDENTIALS;
 
 	/* setup curl */
 	session->curl = curl_easy_init();
 	if (session->curl == NULL)
 		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
+
+	/* setup url for GET request */
+	snprintf(url, sizeof(url), COHOST_LOGIN_URL "/salt?email=%s", email);
+
+	/* set CURLOPTs and send GET request */
+	curl_response_allocate(&resp_body);
+	curl_response_allocate(&resp_head);
+	curl_easy_setopt(session->curl, CURLOPT_URL, url);
+	curl_easy_setopt(session->curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(session->curl, CURLOPT_COOKIEFILE, "");
+	curl_easy_setopt(session->curl, CURLOPT_WRITEFUNCTION, curl_response_catch);
+	curl_easy_setopt(session->curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, curl_response_catch);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
+	if (curl_easy_perform(session->curl) != CURLE_OK)
+		return LIBCOHOST_RESULT_GENERAL_FAIL;
 
 	return LIBCOHOST_RESULT_OK;
 }
@@ -101,4 +135,29 @@ void libcohost_session_destroy(libcohost_session_t *session)
 		if (session->curl) curl_easy_cleanup(session->curl);
 		if (session->session_id) free(session->session_id);
 	}
+}
+
+/*
+ * private functions
+ */
+
+static void curl_response_allocate(curl_response_t *response)
+{
+	response->len_string = 0;
+	response->string = ZALLOC(1);
+}
+
+static size_t curl_response_catch(void *pointer, size_t size, size_t nmemb, curl_response_t *response)
+{
+	size_t new_length = size * nmemb;
+
+	/* setup response string */
+	response->string = realloc(response->string, new_length + 1);
+	response->string[new_length] = '\0';
+	response->len_string = new_length;
+
+	/* copy in response */
+	memcpy(response->string, pointer, new_length);
+
+	return new_length;
 }

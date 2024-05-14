@@ -46,6 +46,7 @@ extern "C" {
 /* result types */
 enum {
 	LIBCOHOST_RESULT_OK,
+	LIBCOHOST_RESULT_GENERAL_FAIL,
 	LIBCOHOST_RESULT_ALLOC_FAIL,
 	LIBCOHOST_RESULT_COULDNT_CONNECT,
 	LIBCOHOST_RESULT_BAD_CREDENTIALS,
@@ -79,7 +80,7 @@ void libcohost_quit(void);
 const char *libcohost_result_string(int r);
 
 /* login to cohost.org */
-int libcohost_session_new(libcohost_session_t *session, char *email, char *pass, char *cookies);
+int libcohost_session_new(libcohost_session_t *session, char *email, char *password, char *cookie_save_filename);
 
 /* destroy an active session */
 void libcohost_session_destroy(libcohost_session_t *session);

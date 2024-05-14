@@ -7,7 +7,7 @@ AR ?= ar
 PKGCONFIG ?= pkg-config
 
 # base flags
-override CFLAGS += -std=c89 -pedantic -Wextra -Wall -Wno-sign-compare
+override CFLAGS += -pedantic -Wextra -Wall -Wno-sign-compare
 
 # curl flags
 override CFLAGS += $(shell $(PKGCONFIG) libcurl --cflags)
