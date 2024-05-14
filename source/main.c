@@ -132,6 +132,27 @@ void log_info(const char *component, const char *fmt, ...)
 	fprintf(stdout, "info: %s: %s\n", component, buffer);
 }
 
+/*
+ *
+ * utility functions
+ *
+ */
+
+void print_banner(void)
+{
+	fprintf(stdout,
+		"====================================\n"
+		TITLE " " VERSION " by " AUTHOR "\n"
+		"====================================\n");
+	fflush(stdout);
+}
+
+/*
+ *
+ * main
+ *
+ */
+
 int main(int argc, char **argv)
 {
 	int r;
@@ -139,8 +160,7 @@ int main(int argc, char **argv)
 	UNUSED(argc);
 	UNUSED(argv);
 
-	/* print banner */
-	printf(TITLE " " VERSION " by " AUTHOR "\n");
+	print_banner();
 
 	/* check arg count */
 	if (argc != 3)
