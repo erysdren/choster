@@ -82,7 +82,8 @@ const char *libcohost_result_string(int r)
 		"Memory allocation failure",
 		"Couldn't connect to cohost.org",
 		"Bad login credentials",
-		"Failed to initialize libcurl"
+		"Failed to initialize libcurl",
+		"General libcurl failure"
 	};
 
 	if (r < 0 || r >= ASIZE(results))
@@ -95,6 +96,7 @@ const char *libcohost_result_string(int r)
 int libcohost_session_new(libcohost_session_t *session, char *email, char *password, char *cookie_save_filename)
 {
 	static char url[512];
+	static char post[1024];
 	curl_response_t resp_body;
 	curl_response_t resp_head;
 
@@ -122,7 +124,7 @@ int libcohost_session_new(libcohost_session_t *session, char *email, char *passw
 	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, curl_response_catch);
 	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
 	if (curl_easy_perform(session->curl) != CURLE_OK)
-		return LIBCOHOST_RESULT_GENERAL_FAIL;
+		return LIBCOHOST_RESULT_CURL_FAIL;
 
 	return LIBCOHOST_RESULT_OK;
 }
