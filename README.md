@@ -1,6 +1,7 @@
 # choster
 
-A small reader for [cohost.org](https://cohost.org) using [PDCurses](https://pdcurses.org/)
+A small reader for [cohost.org](https://cohost.org) written in plain C using
+[libcurl](https://curl.se/libcurl/).
 
 ## License
 
