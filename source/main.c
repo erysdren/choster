@@ -38,7 +38,16 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
 #include "libcohost.h"
+
+/*
+ *
+ * macros
+ *
+ */
 
 #define TITLE "choster"
 #define VERSION "v0.0.1"
@@ -50,43 +59,109 @@ SOFTWARE.
 
 #define UNUSED(x) ((void)(x))
 
+/*
+ *
+ * globals
+ *
+ */
+
+libcohost_session_t session = {0};
+
+/*
+ *
+ * shutdown everything
+ *
+ */
+
+void quit(int code)
+{
+	/* destroy libcohost session */
+	libcohost_session_destroy(&session);
+
+	/* shutdown libcohost */
+	libcohost_quit();
+
+	/* exit program */
+	exit(code);
+}
+
+/*
+ *
+ * log functions
+ *
+ */
+
+/* log an error and kill the program */
+void log_error(const char *component, const char *fmt, ...)
+{
+	va_list list;
+	static char buffer[1024];
+
+	va_start(list, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, list);
+	va_end(list);
+
+	fprintf(stderr, "error: %s: %s\n", component, buffer);
+
+	quit(EXIT_FAILURE);
+}
+
+/* log debug info to stderr */
+void log_debug(const char *component, const char *fmt, ...)
+{
+	va_list list;
+	static char buffer[1024];
+
+	va_start(list, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, list);
+	va_end(list);
+
+	fprintf(stderr, "debug: %s: %s\n", component, buffer);
+}
+
+/* log general info to stdout */
+void log_info(const char *component, const char *fmt, ...)
+{
+	va_list list;
+	static char buffer[1024];
+
+	va_start(list, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, list);
+	va_end(list);
+
+	fprintf(stdout, "info: %s: %s\n", component, buffer);
+}
+
 int main(int argc, char **argv)
 {
 	int r;
-	libcohost_session_t session;
 
 	UNUSED(argc);
 	UNUSED(argv);
 
+	/* print banner */
 	printf(TITLE " " VERSION " by " AUTHOR "\n");
 
+	/* check arg count */
+	if (argc != 3)
+		log_error(TITLE, "incorrect number of command line arguments");
+
 	/* startup */
-	if ((r = libcohost_init()) != LIBCOHOST_RESULT_OK)
-	{
-		printf("libcohost error: %s\n", libcohost_result_string(r));
-		return 1;
-	}
+	r = libcohost_init();
+	if (r != LIBCOHOST_RESULT_OK)
+		log_error("libcohost", libcohost_result_string(r));
 	else
-	{
-		printf("successfully initialized libcohost\n");
-	}
+		log_info("libcohost", "successfully initialized");
 
 	/* create session */
-	if ((r = libcohost_session_new(&session, argv[1], argv[2], NULL)) != LIBCOHOST_RESULT_OK)
-	{
-		printf("libcohost error: %s\n", libcohost_result_string(r));
-		return 1;
-	}
+	r = libcohost_session_new(&session, argv[1], argv[2], NULL);
+	if (r != LIBCOHOST_RESULT_OK)
+		log_error("libcohost", libcohost_result_string(r));
 	else
-	{
-		printf("successfully created libcohost session\n");
-	}
-
-	/* destroy session */
-	libcohost_session_destroy(&session);
+		log_info("libcohost", "successfully created session");
 
 	/* shutdown */
-	libcohost_quit();
+	quit(EXIT_SUCCESS);
 
 	return 0;
 }
