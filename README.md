@@ -1,14 +1,12 @@
-# libcohost
+# choster
 
-A C library for interacting with cohost.org
-
-Currently undergoing refactor.
+A small reader for [cohost.org](https://cohost.org) using [PDCurses](https://pdcurses.org/)
 
 ## License
 
 ANTI-CAPITALIST SOFTWARE LICENSE (v 1.4)
 
-Copyright © 2022-2023 erysdren (it/they/she)
+Copyright (c) 2022-2024 erysdren (it/she/they)
 
 This is anti-capitalist software, released for free use by individuals
 and organizations that do not operate by capitalist principles.

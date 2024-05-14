@@ -1,13 +1,11 @@
-# local files
-local/
-
-# vscode
-.vscode/
-*.code-workspace
+# untracked files
+untracked/
 
 # cmake
-cmake-build-*/
+cmake-build*/
 
 # build
 cohost
 *.exe
+*.o
+*.obj
