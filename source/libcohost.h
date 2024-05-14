@@ -43,13 +43,31 @@ SOFTWARE.
 extern "C" {
 #endif
 
-/* return types */
+/* result types */
 enum {
-	LIBCOHOST_OK,
-	LIBCOHOST_ALLOC_FAIL,
-	LIBCOHOST_COULDNT_CONNECT,
-	LIBCOHOST_BAD_CREDENTIALS
+	LIBCOHOST_RESULT_OK,
+	LIBCOHOST_RESULT_ALLOC_FAIL,
+	LIBCOHOST_RESULT_COULDNT_CONNECT,
+	LIBCOHOST_RESULT_BAD_CREDENTIALS,
+	LIBCOHOST_RESULT_CURL_INIT_FAIL
 };
+
+/* session flags */
+enum {
+	LIBCOHOST_FLAG_LOGGEDIN = 1 << 0,
+	LIBCOHOST_FLAG_ACTIVATED = 1 << 1,
+	LIBCOHOST_FLAG_READONLY = 1 << 2,
+	LIBCOHOST_FLAG_MODMODE = 1 << 3
+};
+
+/* cohost session */
+typedef struct libcohost_session_t {
+	unsigned int user_id;
+	unsigned int project_id;
+	unsigned int flags;
+	char *session_id;
+	void *curl;
+} libcohost_session_t;
 
 /* startup library */
 int libcohost_init(void);
@@ -61,7 +79,10 @@ void libcohost_quit(void);
 const char *libcohost_result_string(int r);
 
 /* login to cohost.org */
-int libcohost_login(char *user, char *pass);
+int libcohost_session_new(libcohost_session_t *session, char *email, char *pass, char *cookies);
+
+/* destroy an active session */
+void libcohost_session_destroy(libcohost_session_t *session);
 
 #ifdef __cplusplus
 }

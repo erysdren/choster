@@ -53,6 +53,7 @@ SOFTWARE.
 int main(int argc, char **argv)
 {
 	int r;
+	libcohost_session_t session;
 
 	UNUSED(argc);
 	UNUSED(argv);
@@ -60,11 +61,29 @@ int main(int argc, char **argv)
 	printf(TITLE " " VERSION " by " AUTHOR "\n");
 
 	/* startup */
-	if ((r = libcohost_init()) != LIBCOHOST_OK)
+	if ((r = libcohost_init()) != LIBCOHOST_RESULT_OK)
 	{
 		printf("libcohost error: %s\n", libcohost_result_string(r));
 		return 1;
 	}
+	else
+	{
+		printf("successfully initialized libcohost\n");
+	}
+
+	/* create session */
+	if ((r = libcohost_session_new(&session, NULL, NULL, NULL)) != LIBCOHOST_RESULT_OK)
+	{
+		printf("libcohost error: %s\n", libcohost_result_string(r));
+		return 1;
+	}
+	else
+	{
+		printf("successfully created libcohost session\n");
+	}
+
+	/* destroy session */
+	libcohost_session_destroy(&session);
 
 	/* shutdown */
 	libcohost_quit();

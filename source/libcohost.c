@@ -38,21 +38,27 @@ SOFTWARE.
 */
 
 #include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
 
 #include "libcohost.h"
 
 #define ASIZE(a) (sizeof(a)/sizeof(a[0]))
+#define ZALLOC(sz) calloc(1, sz)
+#define UNUSED(x) ((void)(x))
 
 /* startup library */
 int libcohost_init(void)
 {
-	return LIBCOHOST_OK;
+	if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0)
+		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
+	return LIBCOHOST_RESULT_OK;
 }
 
 /* shutdown library */
 void libcohost_quit(void)
 {
-
+	curl_global_cleanup();
 }
 
 /* get a string representing a function result */
@@ -62,11 +68,37 @@ const char *libcohost_result_string(int r)
 		"Ok",
 		"Memory allocation fail",
 		"Couldn't connect to cohost.org",
-		"Bad login credentials"
+		"Bad login credentials",
+		"Failed to initialize libcurl"
 	};
 
 	if (r < 0 || r >= ASIZE(results))
 		return NULL;
 
 	return results[r];
+}
+
+/* create a new cohost session */
+int libcohost_session_new(libcohost_session_t *session, char *email, char *pass, char *cookies)
+{
+	UNUSED(email);
+	UNUSED(pass);
+	UNUSED(cookies);
+
+	/* setup curl */
+	session->curl = curl_easy_init();
+	if (session->curl == NULL)
+		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
+
+	return LIBCOHOST_RESULT_OK;
+}
+
+/* destroy an active session */
+void libcohost_session_destroy(libcohost_session_t *session)
+{
+	if (session)
+	{
+		if (session->curl) curl_easy_cleanup(session->curl);
+		if (session->session_id) free(session->session_id);
+	}
 }
