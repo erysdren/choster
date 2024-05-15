@@ -3,6 +3,9 @@
 A small reader for [cohost.org](https://cohost.org) written in plain C using
 [libcurl](https://curl.se/libcurl/).
 
+NOTE: There is nothing here yet except some groundwork communicating with the
+v1 API. Check back later for further progress.
+
 ## License
 
 ```
