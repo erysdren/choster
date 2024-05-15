@@ -149,6 +149,22 @@ void print_banner(void)
 
 /*
  *
+ * io functions
+ *
+ */
+
+void *io_alloc(size_t sz)
+{
+	return calloc(1, sz);
+}
+
+void io_free(void *ptr)
+{
+	free(ptr);
+}
+
+/*
+ *
  * main
  *
  */
@@ -172,6 +188,9 @@ int main(int argc, char **argv)
 		log_error("libcohost", libcohost_result_string(r));
 	else
 		log_info("libcohost", "successfully initialized");
+
+	/* set io callbacks */
+	libcohost_set_io(io_alloc, io_free);
 
 	/* create session */
 	r = libcohost_session_new(&session, argv[1], argv[2], NULL);
