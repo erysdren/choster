@@ -9,4 +9,6 @@ source/choster
 source/*.exe
 source/*.o
 source/*.obj
-source/libcohost.a
+source/*.so
+source/*.a
+source/*.dll
