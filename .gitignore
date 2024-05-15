@@ -6,9 +6,9 @@ untracked/
 
 # build files
 source/choster
-source/*.exe
-source/*.o
-source/*.obj
-source/*.so
-source/*.a
-source/*.dll
+*.exe
+*.o
+*.obj
+*.so
+*.a
+*.dll
