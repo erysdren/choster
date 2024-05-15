@@ -190,7 +190,7 @@ void io_free(void *ptr)
 
 /*
  *
- * sdl handling
+ * gfx handling
  *
  */
 
@@ -258,6 +258,31 @@ void gfx_init(void)
 	eui_init(surface8->w, surface8->h, surface8->format->BitsPerPixel, surface8->pitch, surface8->pixels);
 }
 
+void gfx_main(void)
+{
+	/* clear screen */
+	eui_screen_clear(0x01);
+
+	/* set alignment to the center of the frame */
+	eui_frame_align_set(EUI_ALIGN_MIDDLE, EUI_ALIGN_MIDDLE);
+
+	/* draw 192x64 box and draw a 2px border */
+	eui_draw_box(0, 0, 192, 64, 0x0F);
+	eui_draw_box_border(0, 0, 192, 64, 2, 0x02);
+
+	/* create child frame with 8 pixels of padding on each side */
+	eui_frame_push(0, 0, 176, 48);
+
+	/* set child frame alignment to top-left */
+	eui_frame_align_set(EUI_ALIGN_START, EUI_ALIGN_START);
+
+	/* draw a string with the default 8x8 font */
+	eui_draw_text(0, 0, 0x00, "Hello, world!");
+
+	/* destroy child frame */
+	eui_frame_pop();
+}
+
 /*
  *
  * main
@@ -314,6 +339,9 @@ int main(int argc, char **argv)
 		/* run eui context */
 		if (eui_context_begin())
 		{
+			/* do main program */
+			gfx_main();
+
 			/* end eui context */
 			eui_context_end();
 		}
