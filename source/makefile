@@ -18,7 +18,7 @@ override CFLAGS += -g3
 endif
 
 EXEC_OBJECTS = main.o
-LIB_OBJECTS = libcohost.o
+LIB_OBJECTS = libcohost.o thirdparty/cJSON.o
 
 all: clean $(EXEC) $(LIB)
 

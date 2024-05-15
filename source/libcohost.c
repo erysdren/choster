@@ -42,13 +42,16 @@ SOFTWARE.
 #include <string.h>
 #include <curl/curl.h>
 
+#include "thirdparty/cJSON.h"
+
 #include "libcohost.h"
 
 #define ASIZE(a) (sizeof(a)/sizeof(a[0]))
 #define UNUSED(x) ((void)(x))
 
-#define COHOST_API_URL "https://cohost.org/api/v1"
-#define COHOST_LOGIN_URL COHOST_API_URL "/login"
+/* these must always end with a forward slash */
+#define COHOST_API_BASE "https://cohost.org/api/v1/"
+#define COHOST_API_LOGIN COHOST_API_BASE "login/"
 
 /* curl response catcher */
 typedef struct curl_response_t {
@@ -144,6 +147,8 @@ int libcohost_session_new(libcohost_session_t *session, char *email, char *passw
 	static char post[1024];
 	curl_response_t resp_body = {0};
 	curl_response_t resp_head = {0};
+	cJSON *json = NULL;
+	cJSON *json_item = NULL;
 
 	UNUSED(cookie_save_filename);
 
@@ -156,16 +161,16 @@ int libcohost_session_new(libcohost_session_t *session, char *email, char *passw
 		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
 
 	/* setup url for GET request */
-	snprintf(url, sizeof(url), COHOST_LOGIN_URL "/salt?email=%s", email);
+	snprintf(url, sizeof(url), COHOST_API_LOGIN "salt?email=%s", email);
 
 	/* set CURLOPTs and send GET request */
 	curl_easy_setopt(session->curl, CURLOPT_URL, url);
 	curl_easy_setopt(session->curl, CURLOPT_FOLLOWLOCATION, 1);
 	curl_easy_setopt(session->curl, CURLOPT_COOKIEFILE, "");
-	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, curl_response_catch);
-	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
 	curl_easy_setopt(session->curl, CURLOPT_WRITEFUNCTION, curl_response_catch);
 	curl_easy_setopt(session->curl, CURLOPT_WRITEDATA, &resp_body);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERFUNCTION, curl_response_catch);
+	curl_easy_setopt(session->curl, CURLOPT_HEADERDATA, &resp_head);
 	if (curl_easy_perform(session->curl) != CURLE_OK)
 		return LIBCOHOST_RESULT_CURL_FAIL;
 
@@ -185,3 +190,18 @@ void libcohost_session_destroy(libcohost_session_t *session)
 		if (session->session_id) free(session->session_id);
 	}
 }
+
+/* replace char in string */
+static char *str_replace(char *string, char find, char replace)
+{
+	char *current_pos = strchr(string, find);
+
+	while (current_pos)
+	{
+		*current_pos = replace;
+		current_pos = strchr(current_pos + 1, find);
+	}
+
+	return string;
+}
+
