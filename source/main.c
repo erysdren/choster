@@ -43,15 +43,20 @@ SOFTWARE.
 
 #include "libcohost.h"
 
+#include "eui_sdl2.h"
+#include "palette_vga.h"
+#include "SDL.h"
+
 /*
  *
  * macros
  *
  */
 
-#define TITLE "choster"
+#define NAME "choster"
 #define VERSION "v0.0.1"
 #define AUTHOR "erysdren"
+#define TITLE NAME " " VERSION " by " AUTHOR
 
 #define WIDTH (640)
 #define HEIGHT (480)
@@ -65,7 +70,16 @@ SOFTWARE.
  *
  */
 
-libcohost_session_t session = {0};
+static libcohost_session_t session;
+
+static SDL_Window *window;
+static SDL_Surface *surface8;
+static SDL_Surface *surface32;
+static SDL_Renderer *renderer;
+static SDL_Texture *texture;
+static SDL_Rect rect;
+static SDL_Color colors[256];
+static SDL_Event event;
 
 /*
  *
@@ -80,6 +94,17 @@ void quit(int code)
 
 	/* shutdown libcohost */
 	libcohost_quit();
+
+	/* eui */
+	eui_quit();
+
+	/* sdl */
+	SDL_FreeSurface(surface8);
+	SDL_FreeSurface(surface32);
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 
 	/* exit program */
 	exit(code);
@@ -142,7 +167,7 @@ void print_banner(void)
 {
 	fprintf(stdout,
 		"====================================\n"
-		TITLE " " VERSION " by " AUTHOR "\n"
+		TITLE "\n"
 		"====================================\n");
 	fflush(stdout);
 }
@@ -161,6 +186,76 @@ void *io_alloc(size_t sz)
 void io_free(void *ptr)
 {
 	free(ptr);
+}
+
+/*
+ *
+ * sdl handling
+ *
+ */
+
+void gfx_init(void)
+{
+	uint32_t format;
+	unsigned int rmask, gmask, bmask, amask;
+	int bpp, i;
+
+	/* init */
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		log_error("SDL", SDL_GetError());
+
+	/* create window */
+	window = SDL_CreateWindow(TITLE,
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		WIDTH, HEIGHT,
+		SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+
+	/* create renderer */
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+	SDL_RenderSetLogicalSize(renderer, WIDTH, HEIGHT);
+	SDL_RenderSetIntegerScale(renderer, SDL_TRUE);
+	SDL_SetWindowMinimumSize(window, WIDTH, HEIGHT);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
+	SDL_RenderPresent(renderer);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+
+	/* create our render surface */
+	surface8 = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 8, 0, 0, 0, 0);
+	SDL_FillRect(surface8, NULL, 0);
+
+	/* create our render surface */
+	surface8 = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 8, 0, 0, 0, 0);
+	SDL_FillRect(surface8, NULL, 0);
+
+	/* init palette */
+	for (i = 0; i < 256; i++)
+	{
+		colors[i].r = palette_vga[i * 3];
+		colors[i].g = palette_vga[i * 3 + 1];
+		colors[i].b = palette_vga[i * 3 + 2];
+	}
+
+	/* install palette */
+	SDL_SetPaletteColors(surface8->format->palette, colors, 0, 256);
+
+	/* create display surface */
+	format = SDL_GetWindowPixelFormat(window);
+	SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
+	surface32 = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, bpp, rmask, gmask, bmask, amask);
+	texture = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+
+	/* make sure relative mouse mode is disabled */
+	SDL_SetRelativeMouseMode(SDL_FALSE);
+
+	/* setup blit rect */
+	rect.x = 0;
+	rect.y = 0;
+	rect.w = WIDTH;
+	rect.h = HEIGHT;
+
+	/* init eui */
+	eui_init(surface8->w, surface8->h, surface8->format->BitsPerPixel, surface8->pitch, surface8->pixels);
 }
 
 /*
@@ -198,6 +293,38 @@ int main(int argc, char **argv)
 		log_error("libcohost", libcohost_result_string(r));
 	else
 		log_info("libcohost", "successfully created session");
+
+	/* create window */
+	gfx_init();
+
+	/* main loop */
+	/* main loop */
+	while (!SDL_QuitRequested())
+	{
+		/* push events */
+		while (SDL_PollEvent(&event))
+			eui_sdl2_event_push(&event);
+
+		/* process events */
+		eui_event_queue_process();
+
+		/* clear screen */
+		SDL_FillRect(surface8, NULL, 0x00);
+
+		/* run eui context */
+		if (eui_context_begin())
+		{
+			/* end eui context */
+			eui_context_end();
+		}
+
+		/* copy to screen */
+		SDL_BlitSurface(surface8, &rect, surface32, &rect);
+		SDL_UpdateTexture(texture, NULL, surface32->pixels, surface32->pitch);
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
+	}
 
 	/* shutdown */
 	quit(EXIT_SUCCESS);

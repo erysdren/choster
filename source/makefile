@@ -10,7 +10,7 @@ PKGCONFIG ?= pkg-config
 override CFLAGS += -pedantic -Wextra -Wall
 
 # curl flags
-override CFLAGS += $(shell $(PKGCONFIG) libcurl sdl2 --cflags)
+override CFLAGS += $(shell $(PKGCONFIG) libcurl sdl2 --cflags) -Ieui
 override LDFLAGS += $(shell $(PKGCONFIG) libcurl sdl2 --libs)
 
 ifeq ($(DEBUG),1)
