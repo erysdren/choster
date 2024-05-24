@@ -79,9 +79,6 @@ int libcohost_init(void);
 /* shutdown library */
 void libcohost_quit(void);
 
-/* set io callbacks */
-void libcohost_set_io(void *(*alloc)(size_t sz), void (*free)(void *ptr));
-
 /* get a string representing a function result */
 const char *libcohost_result_string(int r);
 

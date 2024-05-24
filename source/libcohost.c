@@ -59,19 +59,11 @@ typedef struct curl_response_t {
 	size_t len_string;
 } curl_response_t;
 
-/* io functions */
-static struct io {
-	void *(*alloc)(size_t sz);
-	void (*free)(void *ptr);
-} io;
-
 /* startup library */
 int libcohost_init(void)
 {
 	if (curl_global_init(CURL_GLOBAL_DEFAULT) != 0)
 		return LIBCOHOST_RESULT_CURL_INIT_FAIL;
-
-	libcohost_set_io(NULL, NULL);
 
 	return LIBCOHOST_RESULT_OK;
 }
@@ -80,20 +72,6 @@ int libcohost_init(void)
 void libcohost_quit(void)
 {
 	curl_global_cleanup();
-}
-
-/* set io callbacks */
-void libcohost_set_io(void *(*a)(size_t sz), void (*f)(void *ptr))
-{
-	if (a == NULL)
-		io.alloc = malloc;
-	else
-		io.alloc = a;
-
-	if (f == NULL)
-		io.free = free;
-	else
-		io.free = f;
 }
 
 /* get a string representing a function result */
@@ -109,7 +87,7 @@ const char *libcohost_result_string(int r)
 		"General libcurl failure"
 	};
 
-	if (r < 0 || r >= ASIZE(results))
+	if (r < 0 || r >= (int)ASIZE(results))
 		return NULL;
 
 	return results[r];
@@ -119,7 +97,7 @@ const char *libcohost_result_string(int r)
 static void curl_response_free(curl_response_t *response)
 {
 	if (response->string)
-		io.free(response->string);
+		free(response->string);
 
 	response->len_string = 0;
 }
@@ -130,7 +108,7 @@ static size_t curl_response_catch(void *pointer, size_t size, size_t nmemb, curl
 	size_t new_length = size * nmemb;
 
 	/* setup response string */
-	response->string = io.alloc(new_length + 1);
+	response->string = malloc(new_length + 1);
 	response->string[new_length] = '\0';
 	response->len_string = new_length;
 
